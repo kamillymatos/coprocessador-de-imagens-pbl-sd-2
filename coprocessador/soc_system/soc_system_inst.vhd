@@ -78,10 +78,10 @@
 			memory_mem_dm                            : out   std_logic_vector(3 downto 0);                     -- mem_dm
 			memory_oct_rzqin                         : in    std_logic                     := 'X';             -- oct_rzqin
 			pio_done_external_connection_export      : in    std_logic                     := 'X';             -- export
-			pio_donewrite_external_connection_export : in    std_logic                     := 'X';             -- export
 			pio_instruct_external_connection_export  : out   std_logic_vector(31 downto 0);                    -- export
 			pio_start_external_connection_export     : out   std_logic;                                        -- export
-			reset_reset_n                            : in    std_logic                     := 'X'              -- reset_n
+			reset_reset_n                            : in    std_logic                     := 'X';             -- reset_n
+			pio_donewrite_external_connection_export : in    std_logic                     := 'X'              -- export
 		);
 	end component soc_system;
 
@@ -165,9 +165,9 @@
 			memory_mem_dm                            => CONNECTED_TO_memory_mem_dm,                            --                                  .mem_dm
 			memory_oct_rzqin                         => CONNECTED_TO_memory_oct_rzqin,                         --                                  .oct_rzqin
 			pio_done_external_connection_export      => CONNECTED_TO_pio_done_external_connection_export,      --      pio_done_external_connection.export
-			pio_donewrite_external_connection_export => CONNECTED_TO_pio_donewrite_external_connection_export, -- pio_donewrite_external_connection.export
 			pio_instruct_external_connection_export  => CONNECTED_TO_pio_instruct_external_connection_export,  --  pio_instruct_external_connection.export
 			pio_start_external_connection_export     => CONNECTED_TO_pio_start_external_connection_export,     --     pio_start_external_connection.export
-			reset_reset_n                            => CONNECTED_TO_reset_reset_n                             --                             reset.reset_n
+			reset_reset_n                            => CONNECTED_TO_reset_reset_n,                            --                             reset.reset_n
+			pio_donewrite_external_connection_export => CONNECTED_TO_pio_donewrite_external_connection_export  -- pio_donewrite_external_connection.export
 		);
 

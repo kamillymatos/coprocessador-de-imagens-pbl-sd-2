@@ -211,8 +211,7 @@ module ghrd_top(
       input                      RISCV_JTAG_TCK,
       input                      RISCV_JTAG_TDI,
       output                     RISCV_JTAG_TDO,
-      input                      RISCV_JTAG_TMS
-
+      input                      RISCV_JTAG_TMS 
 );
 
 // internal wires and registers declaration
@@ -230,6 +229,17 @@ assign stm_hw_events    = {{3{1'b0}},SW, fpga_led_internal, fpga_debounced_butto
 
 wire [31:0] pio_instruction;
 wire        pio_start;
+
+wire reset;
+assign reset = KEY[0];
+wire reset_d;
+
+debounce (
+  .clk(CLOCK_50),
+  .reset_n(hps_fpga_reset_n),
+  .data_in(reset),
+  .data_out(reset_d)
+);
 
 
 soc_system u0 (
@@ -326,20 +336,32 @@ soc_system u0 (
 	 .pio_instruct_external_connection_export (pio_instruction), // pio_instruct_external_connection.export
     .pio_start_external_connection_export    (pio_start),    //    pio_start_external_connection.export
     .pio_done_external_connection_export     (done_reg),	 //     pio_done_external_connection.export
-	 .pio_donewrite_external_connection_export (done_write) // pio_donewrite_external_connection.export
-	 
+	 .pio_donewrite_external_connection_export (done_write)  // pio_donewrite_external_connection.export
 );
 
-wire reset;
-assign reset = KEY[0];
+// ============================================
+// DEBUG: LEDs
+// ============================================
+
+//assign LEDR[0] = done_reg;              // Done mantido
+//assign LEDR[1] = done_write;
+//
+//
+//assign LEDR[2] = pio_instruction[20];   
+//assign LEDR[3] = pio_instruction[21];
+//assign LEDR[4] = pio_instruction[22];
+//assign LEDR[5] = pio_instruction[23];
+//assign LEDR[6] = pio_instruction[24];
+//assign LEDR[7] = pio_instruction[25];
+//assign LEDR[8] = pio_instruction[26];
+//assign LEDR[9] = pio_instruction[27];   
 
 // ============================================
 // UNIDADE DE CONTROLE
 // ============================================
-
 UnidadeControle u_ctrl (
     .clk_50(CLOCK_50),
-    .reset(reset),
+    .reset(reset_d),
     .start(pio_start),
     .SW(pio_instruction[1:0]),
     .zoom_select(pio_instruction[3:2]),
@@ -365,8 +387,8 @@ reg         done_reg;               // REG para manter o sinal done
 wire        done_redim_pulse;  
 wire        done_write;
  
-always @(posedge CLOCK_50 or negedge hps_fpga_reset_n) begin
-    if (!hps_fpga_reset_n)
+always @(posedge CLOCK_50 or negedge reset_d) begin
+    if (!reset_d)
         done_reg <= 1'b1;           // ✅ CORRIGIDO: Inicia em 1 (pronto)
     else if (pio_start)
         done_reg <= 1'b0;           // Limpa quando recebe start

@@ -42,7 +42,7 @@ module UnidadeControle(
     );
 	 
 	 wire clk_100;
-		clock100 clk_100_inst (
+		clk_100_0002 clk_100_inst (
 		.refclk   (clk_50),   //  refclk.clk
 		.rst      (!reset),      //   reset.reset
 		.outclk_0 (clk_100), // outclk0.clk
@@ -98,7 +98,7 @@ module UnidadeControle(
 		end
 
 		// Lógica combinacional para próximo estado
-		always @(posedge clk_100 or negedge reset) begin
+		always @(*) begin
 			 next_state_write = state_write;
 			 
 			 case (state_write)
@@ -152,8 +152,9 @@ module UnidadeControle(
 				  endcase
 			 end
 		end
+
 								
-	   mem1 memory1(
+	 mem1 memory1(
         .rdaddress(rom_addr_top), 
         .wraddress(addr_hps), 
         .clock(clk_100), 
@@ -161,8 +162,7 @@ module UnidadeControle(
         .wren(wren_ram1), 
         .q(rom_pixel)
     );						
-
-
+	
     wire [18:0] EnderecoRAM;
     wire [7:0] ram_data_in;
 	 wire wren_ram;

@@ -78,10 +78,10 @@ module soc_system (
 	memory_mem_dm,
 	memory_oct_rzqin,
 	pio_done_external_connection_export,
-	pio_donewrite_external_connection_export,
 	pio_instruct_external_connection_export,
 	pio_start_external_connection_export,
-	reset_reset_n);	
+	reset_reset_n,
+	pio_donewrite_external_connection_export);	
 
 	input		clk_clk;
 	input		hps_0_f2h_cold_reset_req_reset_n;
@@ -161,8 +161,8 @@ module soc_system (
 	output	[3:0]	memory_mem_dm;
 	input		memory_oct_rzqin;
 	input		pio_done_external_connection_export;
-	input		pio_donewrite_external_connection_export;
 	output	[31:0]	pio_instruct_external_connection_export;
 	output		pio_start_external_connection_export;
 	input		reset_reset_n;
+	input		pio_donewrite_external_connection_export;
 endmodule

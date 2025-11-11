@@ -1,30 +1,30 @@
 Info: Starting: Create block symbol file (.bsf)
-Info: qsys-generate /home/aluno/Documentos/my_first_hps-fpga_base/soc_system.qsys --block-symbol-file --output-directory=/home/aluno/Documentos/my_first_hps-fpga_base/soc_system --family="Cyclone V" --part=5CSEMA5F31C6
+Info: qsys-generate C:\Users\nogue\Downloads\my_first_hps-fpga_base-20251102T192055Z-1-001\my_first_hps-fpga_base\soc_system.qsys --block-symbol-file --output-directory=C:\Users\nogue\Downloads\my_first_hps-fpga_base-20251102T192055Z-1-001\my_first_hps-fpga_base\soc_system --family="Cyclone V" --part=5CSEMA5F31C6
 Progress: Loading my_first_hps-fpga_base/soc_system.qsys
 Progress: Reading input file
-Progress: Adding clk_0 [clock_source 23.1]
+Progress: Adding clk_0 [clock_source 18.1]
 Progress: Parameterizing module clk_0
-Progress: Adding fpga_only_master [altera_jtag_avalon_master 23.1]
+Progress: Adding fpga_only_master [altera_jtag_avalon_master 18.1]
 Progress: Parameterizing module fpga_only_master
-Progress: Adding hps_0 [altera_hps 23.1]
+Progress: Adding hps_0 [altera_hps 18.1]
 Progress: Parameterizing module hps_0
-Progress: Adding hps_only_master [altera_jtag_avalon_master 23.1]
+Progress: Adding hps_only_master [altera_jtag_avalon_master 18.1]
 Progress: Parameterizing module hps_only_master
 Progress: Adding intr_capturer_0 [intr_capturer 100.99.98.97]
 Progress: Parameterizing module intr_capturer_0
-Progress: Adding jtag_uart [altera_avalon_jtag_uart 23.1]
+Progress: Adding jtag_uart [altera_avalon_jtag_uart 18.1]
 Progress: Parameterizing module jtag_uart
-Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 23.1]
+Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 18.1]
 Progress: Parameterizing module onchip_memory2_0
-Progress: Adding pio_done [altera_avalon_pio 23.1]
+Progress: Adding pio_done [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_done
-Progress: Adding pio_doneWrite [altera_avalon_pio 23.1]
+Progress: Adding pio_doneWrite [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_doneWrite
-Progress: Adding pio_instruct [altera_avalon_pio 23.1]
+Progress: Adding pio_instruct [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_instruct
-Progress: Adding pio_start [altera_avalon_pio 23.1]
+Progress: Adding pio_start [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_start
-Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 23.1]
+Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 18.1]
 Progress: Parameterizing module sysid_qsys
 Progress: Building connections
 Progress: Parameterizing connections
@@ -44,32 +44,32 @@ Info: qsys-generate succeeded.
 Info: Finished: Create block symbol file (.bsf)
 Info: 
 Info: Starting: Create HDL design files for synthesis
-Info: qsys-generate /home/aluno/Documentos/my_first_hps-fpga_base/soc_system.qsys --synthesis=VERILOG --output-directory=/home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis --family="Cyclone V" --part=5CSEMA5F31C6
+Info: qsys-generate C:\Users\nogue\Downloads\my_first_hps-fpga_base-20251102T192055Z-1-001\my_first_hps-fpga_base\soc_system.qsys --synthesis=VERILOG --output-directory=C:\Users\nogue\Downloads\my_first_hps-fpga_base-20251102T192055Z-1-001\my_first_hps-fpga_base\soc_system\synthesis --family="Cyclone V" --part=5CSEMA5F31C6
 Progress: Loading my_first_hps-fpga_base/soc_system.qsys
 Progress: Reading input file
-Progress: Adding clk_0 [clock_source 23.1]
+Progress: Adding clk_0 [clock_source 18.1]
 Progress: Parameterizing module clk_0
-Progress: Adding fpga_only_master [altera_jtag_avalon_master 23.1]
+Progress: Adding fpga_only_master [altera_jtag_avalon_master 18.1]
 Progress: Parameterizing module fpga_only_master
-Progress: Adding hps_0 [altera_hps 23.1]
+Progress: Adding hps_0 [altera_hps 18.1]
 Progress: Parameterizing module hps_0
-Progress: Adding hps_only_master [altera_jtag_avalon_master 23.1]
+Progress: Adding hps_only_master [altera_jtag_avalon_master 18.1]
 Progress: Parameterizing module hps_only_master
 Progress: Adding intr_capturer_0 [intr_capturer 100.99.98.97]
 Progress: Parameterizing module intr_capturer_0
-Progress: Adding jtag_uart [altera_avalon_jtag_uart 23.1]
+Progress: Adding jtag_uart [altera_avalon_jtag_uart 18.1]
 Progress: Parameterizing module jtag_uart
-Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 23.1]
+Progress: Adding onchip_memory2_0 [altera_avalon_onchip_memory2 18.1]
 Progress: Parameterizing module onchip_memory2_0
-Progress: Adding pio_done [altera_avalon_pio 23.1]
+Progress: Adding pio_done [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_done
-Progress: Adding pio_doneWrite [altera_avalon_pio 23.1]
+Progress: Adding pio_doneWrite [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_doneWrite
-Progress: Adding pio_instruct [altera_avalon_pio 23.1]
+Progress: Adding pio_instruct [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_instruct
-Progress: Adding pio_start [altera_avalon_pio 23.1]
+Progress: Adding pio_start [altera_avalon_pio 18.1]
 Progress: Parameterizing module pio_start
-Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 23.1]
+Progress: Adding sysid_qsys [altera_avalon_sysid_qsys 18.1]
 Progress: Parameterizing module sysid_qsys
 Progress: Building connections
 Progress: Parameterizing connections
@@ -101,63 +101,23 @@ Warning: hps_0: 1 or more output clock frequencies cannot be achieved precisely,
 Info: hps_0: "soc_system" instantiated altera_hps "hps_0"
 Info: intr_capturer_0: "soc_system" instantiated intr_capturer "intr_capturer_0"
 Info: jtag_uart: Starting RTL generation for module 'soc_system_jtag_uart'
-Info: jtag_uart:   Generation command is [exec /opt/intelFPGA_lite/23.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA_lite/23.1/quartus/linux64/perl/lib -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart -- /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart/generate_rtl.pl --name=soc_system_jtag_uart --dir=/tmp/alt0397_5903615723464955265.dir/0003_jtag_uart_gen/ --quartus_dir=/opt/intelFPGA_lite/23.1/quartus --verilog --config=/tmp/alt0397_5903615723464955265.dir/0003_jtag_uart_gen//soc_system_jtag_uart_component_configuration.pl  --do_build_sim=0  ]
-Info: jtag_uart: perl: warning: Setting locale failed.
-Info: jtag_uart: perl: warning: Please check that your locale settings:
-Info: jtag_uart: 	LANGUAGE = (unset),
-Info: jtag_uart: 	LC_ALL = (unset),
-Info: jtag_uart: 	LC_CTYPE = "en_US.UTF-8",
-Info: jtag_uart: 	LANG = "C"
-Info: jtag_uart:     are supported and installed on your system.
-Info: jtag_uart: perl: warning: Falling back to the standard locale ("C").
+Info: jtag_uart:   Generation command is [exec C:/intelfpga_lite/18.1/quartus/bin64/perl/bin/perl.exe -I C:/intelfpga_lite/18.1/quartus/bin64/perl/lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/europa -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/perl_lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/common -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart -- C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_jtag_uart/generate_rtl.pl --name=soc_system_jtag_uart --dir=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0003_jtag_uart_gen/ --quartus_dir=C:/intelfpga_lite/18.1/quartus --verilog --config=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0003_jtag_uart_gen//soc_system_jtag_uart_component_configuration.pl  --do_build_sim=0  ]
 Info: jtag_uart: Done RTL generation for module 'soc_system_jtag_uart'
 Info: jtag_uart: "soc_system" instantiated altera_avalon_jtag_uart "jtag_uart"
 Info: onchip_memory2_0: Starting RTL generation for module 'soc_system_onchip_memory2_0'
-Info: onchip_memory2_0:   Generation command is [exec /opt/intelFPGA_lite/23.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA_lite/23.1/quartus/linux64/perl/lib -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2 -- /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2/generate_rtl.pl --name=soc_system_onchip_memory2_0 --dir=/tmp/alt0397_5903615723464955265.dir/0004_onchip_memory2_0_gen/ --quartus_dir=/opt/intelFPGA_lite/23.1/quartus --verilog --config=/tmp/alt0397_5903615723464955265.dir/0004_onchip_memory2_0_gen//soc_system_onchip_memory2_0_component_configuration.pl  --do_build_sim=0  ]
-Info: onchip_memory2_0: perl: warning: Setting locale failed.
-Info: onchip_memory2_0: perl: warning: Please check that your locale settings:
-Info: onchip_memory2_0: 	LANGUAGE = (unset),
-Info: onchip_memory2_0: 	LC_ALL = (unset),
-Info: onchip_memory2_0: 	LC_CTYPE = "en_US.UTF-8",
-Info: onchip_memory2_0: 	LANG = "C"
-Info: onchip_memory2_0:     are supported and installed on your system.
-Info: onchip_memory2_0: perl: warning: Falling back to the standard locale ("C").
+Info: onchip_memory2_0:   Generation command is [exec C:/intelfpga_lite/18.1/quartus/bin64/perl/bin/perl.exe -I C:/intelfpga_lite/18.1/quartus/bin64/perl/lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/europa -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/perl_lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/common -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2 -- C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_onchip_memory2/generate_rtl.pl --name=soc_system_onchip_memory2_0 --dir=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0004_onchip_memory2_0_gen/ --quartus_dir=C:/intelfpga_lite/18.1/quartus --verilog --config=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0004_onchip_memory2_0_gen//soc_system_onchip_memory2_0_component_configuration.pl  --do_build_sim=0  ]
 Info: onchip_memory2_0: Done RTL generation for module 'soc_system_onchip_memory2_0'
 Info: onchip_memory2_0: "soc_system" instantiated altera_avalon_onchip_memory2 "onchip_memory2_0"
 Info: pio_done: Starting RTL generation for module 'soc_system_pio_done'
-Info: pio_done:   Generation command is [exec /opt/intelFPGA_lite/23.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA_lite/23.1/quartus/linux64/perl/lib -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_done --dir=/tmp/alt0397_5903615723464955265.dir/0005_pio_done_gen/ --quartus_dir=/opt/intelFPGA_lite/23.1/quartus --verilog --config=/tmp/alt0397_5903615723464955265.dir/0005_pio_done_gen//soc_system_pio_done_component_configuration.pl  --do_build_sim=0  ]
-Info: pio_done: perl: warning: Setting locale failed.
-Info: pio_done: perl: warning: Please check that your locale settings:
-Info: pio_done: 	LANGUAGE = (unset),
-Info: pio_done: 	LC_ALL = (unset),
-Info: pio_done: 	LC_CTYPE = "en_US.UTF-8",
-Info: pio_done: 	LANG = "C"
-Info: pio_done:     are supported and installed on your system.
-Info: pio_done: perl: warning: Falling back to the standard locale ("C").
+Info: pio_done:   Generation command is [exec C:/intelfpga_lite/18.1/quartus/bin64/perl/bin/perl.exe -I C:/intelfpga_lite/18.1/quartus/bin64/perl/lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/europa -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/perl_lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/common -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_done --dir=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0005_pio_done_gen/ --quartus_dir=C:/intelfpga_lite/18.1/quartus --verilog --config=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0005_pio_done_gen//soc_system_pio_done_component_configuration.pl  --do_build_sim=0  ]
 Info: pio_done: Done RTL generation for module 'soc_system_pio_done'
 Info: pio_done: "soc_system" instantiated altera_avalon_pio "pio_done"
 Info: pio_instruct: Starting RTL generation for module 'soc_system_pio_instruct'
-Info: pio_instruct:   Generation command is [exec /opt/intelFPGA_lite/23.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA_lite/23.1/quartus/linux64/perl/lib -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_instruct --dir=/tmp/alt0397_5903615723464955265.dir/0006_pio_instruct_gen/ --quartus_dir=/opt/intelFPGA_lite/23.1/quartus --verilog --config=/tmp/alt0397_5903615723464955265.dir/0006_pio_instruct_gen//soc_system_pio_instruct_component_configuration.pl  --do_build_sim=0  ]
-Info: pio_instruct: perl: warning: Setting locale failed.
-Info: pio_instruct: perl: warning: Please check that your locale settings:
-Info: pio_instruct: 	LANGUAGE = (unset),
-Info: pio_instruct: 	LC_ALL = (unset),
-Info: pio_instruct: 	LC_CTYPE = "en_US.UTF-8",
-Info: pio_instruct: 	LANG = "C"
-Info: pio_instruct:     are supported and installed on your system.
-Info: pio_instruct: perl: warning: Falling back to the standard locale ("C").
+Info: pio_instruct:   Generation command is [exec C:/intelfpga_lite/18.1/quartus/bin64/perl/bin/perl.exe -I C:/intelfpga_lite/18.1/quartus/bin64/perl/lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/europa -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/perl_lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/common -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_instruct --dir=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0006_pio_instruct_gen/ --quartus_dir=C:/intelfpga_lite/18.1/quartus --verilog --config=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0006_pio_instruct_gen//soc_system_pio_instruct_component_configuration.pl  --do_build_sim=0  ]
 Info: pio_instruct: Done RTL generation for module 'soc_system_pio_instruct'
 Info: pio_instruct: "soc_system" instantiated altera_avalon_pio "pio_instruct"
 Info: pio_start: Starting RTL generation for module 'soc_system_pio_start'
-Info: pio_start:   Generation command is [exec /opt/intelFPGA_lite/23.1/quartus/linux64/perl/bin/perl -I /opt/intelFPGA_lite/23.1/quartus/linux64/perl/lib -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin/europa -I /opt/intelFPGA_lite/23.1/quartus/sopc_builder/bin -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/common -I /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- /opt/intelFPGA_lite/23.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_start --dir=/tmp/alt0397_5903615723464955265.dir/0007_pio_start_gen/ --quartus_dir=/opt/intelFPGA_lite/23.1/quartus --verilog --config=/tmp/alt0397_5903615723464955265.dir/0007_pio_start_gen//soc_system_pio_start_component_configuration.pl  --do_build_sim=0  ]
-Info: pio_start: perl: warning: Setting locale failed.
-Info: pio_start: perl: warning: Please check that your locale settings:
-Info: pio_start: 	LANGUAGE = (unset),
-Info: pio_start: 	LC_ALL = (unset),
-Info: pio_start: 	LC_CTYPE = "en_US.UTF-8",
-Info: pio_start: 	LANG = "C"
-Info: pio_start:     are supported and installed on your system.
-Info: pio_start: perl: warning: Falling back to the standard locale ("C").
+Info: pio_start:   Generation command is [exec C:/intelfpga_lite/18.1/quartus/bin64/perl/bin/perl.exe -I C:/intelfpga_lite/18.1/quartus/bin64/perl/lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/europa -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin/perl_lib -I C:/intelfpga_lite/18.1/quartus/sopc_builder/bin -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/common -I C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio -- C:/intelfpga_lite/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_pio/generate_rtl.pl --name=soc_system_pio_start --dir=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0007_pio_start_gen/ --quartus_dir=C:/intelfpga_lite/18.1/quartus --verilog --config=C:/Users/nogue/AppData/Local/Temp/alt0394_5161131083169793360.dir/0007_pio_start_gen//soc_system_pio_start_component_configuration.pl  --do_build_sim=0  ]
 Info: pio_start: Done RTL generation for module 'soc_system_pio_start'
 Info: pio_start: "soc_system" instantiated altera_avalon_pio "pio_start"
 Info: sysid_qsys: "soc_system" instantiated altera_avalon_sysid_qsys "sysid_qsys"
@@ -197,52 +157,51 @@ Info: router_006: "mm_interconnect_0" instantiated altera_merlin_router "router_
 Info: router_007: "mm_interconnect_0" instantiated altera_merlin_router "router_007"
 Info: router_009: "mm_interconnect_0" instantiated altera_merlin_router "router_009"
 Info: fpga_only_master_master_limiter: "mm_interconnect_0" instantiated altera_merlin_traffic_limiter "fpga_only_master_master_limiter"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_sc_fifo.v
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_base.v
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_sc_fifo.v
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_base.v
 Info: onchip_memory2_0_s1_burst_adapter: "mm_interconnect_0" instantiated altera_merlin_burst_adapter "onchip_memory2_0_s1_burst_adapter"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_stage.sv
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_base.v
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_stage.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_st_pipeline_base.v
 Info: cmd_demux: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "cmd_demux"
 Info: cmd_demux_002: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "cmd_demux_002"
 Info: cmd_demux_003: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "cmd_demux_003"
 Info: cmd_mux: "mm_interconnect_0" instantiated altera_merlin_multiplexer "cmd_mux"
 Info: cmd_mux_001: "mm_interconnect_0" instantiated altera_merlin_multiplexer "cmd_mux_001"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: cmd_mux_002: "mm_interconnect_0" instantiated altera_merlin_multiplexer "cmd_mux_002"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: cmd_mux_004: "mm_interconnect_0" instantiated altera_merlin_multiplexer "cmd_mux_004"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: rsp_demux: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "rsp_demux"
 Info: rsp_demux_001: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "rsp_demux_001"
 Info: rsp_demux_002: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "rsp_demux_002"
 Info: rsp_demux_004: "mm_interconnect_0" instantiated altera_merlin_demultiplexer "rsp_demux_004"
 Info: rsp_mux: "mm_interconnect_0" instantiated altera_merlin_multiplexer "rsp_mux"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: rsp_mux_002: "mm_interconnect_0" instantiated altera_merlin_multiplexer "rsp_mux_002"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: rsp_mux_003: "mm_interconnect_0" instantiated altera_merlin_multiplexer "rsp_mux_003"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: fpga_only_master_master_to_onchip_memory2_0_s1_cmd_width_adapter: "mm_interconnect_0" instantiated altera_merlin_width_adapter "fpga_only_master_master_to_onchip_memory2_0_s1_cmd_width_adapter"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_burst_uncompressor.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_burst_uncompressor.sv
 Info: avalon_st_adapter: "mm_interconnect_0" instantiated altera_avalon_st_adapter "avalon_st_adapter"
 Info: avalon_st_adapter_001: "mm_interconnect_0" instantiated altera_avalon_st_adapter "avalon_st_adapter_001"
 Info: hps_0_f2h_axi_slave_agent: "mm_interconnect_1" instantiated altera_merlin_axi_slave_ni "hps_0_f2h_axi_slave_agent"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_burst_uncompressor.sv
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_sc_fifo.v
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_burst_uncompressor.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_avalon_sc_fifo.v
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_address_alignment.sv
 Info: router: "mm_interconnect_1" instantiated altera_merlin_router "router"
 Info: router_001: "mm_interconnect_1" instantiated altera_merlin_router "router_001"
 Info: cmd_demux: "mm_interconnect_1" instantiated altera_merlin_demultiplexer "cmd_demux"
 Info: cmd_mux: "mm_interconnect_1" instantiated altera_merlin_multiplexer "cmd_mux"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: rsp_demux: "mm_interconnect_1" instantiated altera_merlin_demultiplexer "rsp_demux"
 Info: rsp_mux: "mm_interconnect_1" instantiated altera_merlin_multiplexer "rsp_mux"
-Info: Reusing file /home/aluno/Documentos/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
+Info: Reusing file C:/Users/nogue/Downloads/my_first_hps-fpga_base-20251102T192055Z-1-001/my_first_hps-fpga_base/soc_system/synthesis/submodules/altera_merlin_arbitrator.sv
 Info: border: "hps_io" instantiated altera_interface_generator "border"
-Info: error_adapter_0: "avalon_st_adapter" instantiated error_adapter "error_adapter_0"
-Info: error_adapter_0: "avalon_st_adapter_001" instantiated error_adapter "error_adapter_0"
-Info: soc_system: Done "soc_system" with 66 modules, 132 files
-Info: qsys-generate succeeded.
-Info: Finished: Create HDL design files for synthesis
+Error: Generation stopped, 2 or more modules remaining
+Info: soc_system: Done "soc_system" with 66 modules, 130 files
+Error: qsys-generate failed with exit code 1: 1 Error, 10 Warnings
+Info: Stopping: Create HDL design files for synthesis
