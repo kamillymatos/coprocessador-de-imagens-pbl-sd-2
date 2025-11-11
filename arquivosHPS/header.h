@@ -32,7 +32,25 @@ int iniciarAPI();
  */
 int encerrarAPI();
 
-
+/**
+ * @brief Escreve um pixel na VRAM do FPGA (porta de escrita via PIO).
+ *
+ * Esta função empacota o endereço e o dado do pixel em um word conforme o
+ * protocolo definido pela interface PIO e escreve no registrador PIO_INSTRUCTION.
+ * A função também seta temporariamente o bit "SolicitaEscrita" (bit reservado)
+ * para informar a FSM de escrita no FPGA e depois limpa esse bit.
+ *
+ * Observações importantes:
+ * - O endereço recebido (address) é o endereço linear do pixel na imagem
+ *   (0 .. VRAM_MAX_ADDR-1). Se address >= VRAM_MAX_ADDR, a função retorna erro.
+ * - pixel_data é um valor 8 bits (escala de cinza).
+ * - A função **não** efetua polling do DONE (loop de espera foi removido da
+ *   versão assembly). Se for necessário confirmar escrita, o software deve
+ *   ler o status apropriado quando aplicável.
+ *
+ * @param address Endereço linear do pixel (0 .. VRAM_MAX_ADDR-1)
+ * @param pixel_data Valor do pixel (8-bit grayscale)
+ */
 void write_pixel(int address, unsigned char pixel_data);
 
 
