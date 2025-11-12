@@ -1505,169 +1505,75 @@ DMB SY
 
 ### Estrutura do Programa
 
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
-#include "header.h"
+**Estrutura do Programa**
+O arquivo main.c funciona como a camada de interface entre o usuário e as rotinas de baixo nível implementadas em Assembly, coordenando todo o fluxo de execução do sistema.
 
-// Protótipos das funções Assembly (extern)
-extern int iniciarAPI();
-extern int encerrarAPI();
-extern int NHI(int zoom);
-extern int replicacao(int zoom);
-extern int decimacao(int zoom);
-extern int media_blocos(int zoom);
-extern int Flag_Done();
-extern void write_pixel(int address, unsigned char pixel_data);
+**Includes e Dependências:**
+O programa utiliza bibliotecas padrão do C para operações de entrada/saída, manipulação de memória e tipos de dados de tamanho fixo. O arquivo header.h contém as estruturas de dados do formato BMP necessárias para o processamento de imagens.
 
-int main() {
-    // 1. Inicializar API
-    if (iniciarAPI() != 0) {
-        printf("ERRO ao iniciar API!\n");
-        return 1;
-    }
-    
-    // 2. Menu interativo
-    // ...
-    
-    // 3. Finalizar API
-    encerrarAPI();
-    return 0;
-}
-```
+**Declarações Externas:**
+São declarados protótipos de todas as funções implementadas em Assembly (marcadas com extern), permitindo que o código C as invoque:
+  - **Gerenciamento da API:** iniciarAPI() e encerrarAPI() - Inicializam e finalizam a comunicação com a FPGA;
+  - **Operações de Processamento:** NHI(), replicacao(), decimacao(), media_blocos() - Algoritmos de redimensionamento que recebem o nível de zoom como parâmetro;
+  - **Monitoramento:** Flag_Done() - Verifica se o hardware está pronto ou ocupado;
+  - **Transferência de Dados:** write_pixel() - Envia um pixel individual para a memória de vídeo.
+
+**Fluxo Principal:**
+O programa segue um ciclo de vida bem definido:
+  1. **Inicialização:** Estabelece conexão com a FPGA através da API, verificando se foi bem-sucedida;
+  2. **Execução:** Apresenta o menu interativo para o usuário testar as funcionalidades;
+  3. **Finalização:** Encerra corretamente a API e libera recursos antes de terminar.
+
+Caso a inicialização falhe, o programa exibe uma mensagem de erro e encerra imediatamente com código de retorno 1.
 
 ---
 
 ### Função: `enviar_imagem_bmp(filename)`
 
-**Propósito:** Ler arquivo BITMAP e transferir para VRAM da FPGA.
+**Propósito:** Carregar uma imagem em formato BMP do disco e transferi-la pixel por pixel para a memória de vídeo (VRAM) da FPGA.
 
-**Características:**
-- ✅ Suporta BMP 8 bits (grayscale) e 24 bits (RGB)
-- ✅ Converte RGB → grayscale: `(R+G+B)/3`
-- ✅ Compensa inversão vertical do formato BMP
-- ✅ Exibe progresso em tempo real
+**Funcionalidades:**
+A função realiza o processamento completo de arquivos BMP, incluindo:
 
-**Estruturas BMP:**
-```c
-#pragma pack(push, 1)  // Desabilita padding
+  - **Leitura e Validação:** Abre o arquivo, lê os cabeçalhos BMP e verifica se o formato é válido (assinatura 'BM');
+  - **Suporte Multi-formato:** Aceita imagens em 8 bits (grayscale) ou 24 bits (RGB colorido);
+  - **Conversão Automática:** Para imagens coloridas (24 bits), converte RGB para escala de cinza usando a fórmula de média simples: (R + G + B) / 3;
+  - **Correção de Orientação:** Compensa a inversão vertical característica do formato BMP, que armazena pixels de baixo para cima
+  - **Tratamento de Padding:** Lida corretamente com o alinhamento de 4 bytes usado em linhas BMP
+  - **Feedback Visual:** Exibe informações da imagem (dimensões, bits por pixel) e progresso em tempo real durante o envio
 
-typedef struct {
-    uint16_t type;          // 'BM' = 0x4D42
-    uint32_t size;          // Tamanho do arquivo
-    uint16_t reserved1;
-    uint16_t reserved2;
-    uint32_t offset;        // Offset para dados de pixel
-} BMPHeader;
+**Dimensões Esperadas:**
+O sistema foi projetado para imagens de 160×120 pixels (19.200 pixels totais), emitindo um aviso caso a imagem tenha dimensões diferentes.
 
-typedef struct {
-    uint32_t size;          // Tamanho deste header (40 bytes)
-    int32_t width;          // Largura em pixels
-    int32_t height;         // Altura em pixels (positivo = bottom-up)
-    uint16_t planes;        // Sempre 1
-    uint16_t bits_per_pixel; // 8, 24 ou 32
-    uint32_t compression;   // 0 = sem compressão
-    uint32_t image_size;
-    int32_t x_pixels_per_meter;
-    int32_t y_pixels_per_meter;
-    uint32_t colors_used;
-    uint32_t colors_important;
-} BMPInfoHeader;
+**Processo de Transferência:**
+Cada pixel é enviado individualmente para a VRAM através da função write_pixel, que recebe o endereço linear do pixel e seu valor em escala de cinza. A barra de progresso é atualizada a cada 500 pixels processados.
 
-#pragma pack(pop)
-```
+**Retorno:**
+  - 0: Imagem enviada com sucesso
+  - -1: Erro (arquivo não encontrado, formato inválido, falha de memória, etc.)
 
 ---
 
 ### Menu Interativo
 
-```c
-int main() {
-    int opcao, zoom_escolha, zoom_real, resultado;
-    
-    // Inicializar API
-    if (iniciarAPI() != 0) {
-        printf("ERRO ao iniciar API!\n");
-        return 1;
-    }
-    
-    do {
-        printf("\n--- MENU DE TESTES ---\n");
-        printf("1. Vizinho Próximo (NHI)\n");
-        printf("2. Replicação\n");
-        printf("3. Decimação\n");
-        printf("4. Média de Blocos\n");
-        printf("5. Verificar Status\n");
-        printf("6. Enviar imagem BMP\n");
-        printf("7. Sair\n");
-        printf("Opção: ");
-        
-        scanf("%d", &opcao);
-        
-        switch (opcao) {
-            case 1: case 2: case 3: case 4:
-                // Solicitar zoom
-                printf("\nEscolha o zoom:\n");
-                printf("(1) 1x  (2) 2x  (3) 4x  (4) 8x\n");
-                printf("Opção: ");
-                scanf("%d", &zoom_escolha);
-                
-                // Converter (1-4) → (0-3)
-                zoom_real = zoom_escolha - 1;
-                
-                if (zoom_real < 0 || zoom_real > 3) {
-                    printf("ERRO: Zoom inválido!\n");
-                    break;
-                }
-                
-                // Executar operação
-                switch (opcao) {
-                    case 1: resultado = NHI(zoom_real); break;
-                    case 2: resultado = replicacao(zoom_real); break;
-                    case 3: resultado = decimacao(zoom_real); break;
-                    case 4: resultado = media_blocos(zoom_real); break;
-                }
-                
-                // Verificar resultado
-                if (resultado == 0) {
-                    printf("Operação concluída com sucesso!\n");
-                } else if (resultado == -2) {
-                    printf("ERRO: Timeout!\n");
-                } else {
-                    printf("ERRO: Código %d\n", resultado);
-                }
-                break;
-                
-            case 5:
-                printf("\nStatus: %s\n",
-                       Flag_Done() ? "PRONTO" : "OCUPADO");
-                break;
-                
-            case 6:
-                printf("Arquivo: ./ImgGalinha.bmp\n");
-                if (enviar_imagem_bmp("./ImgGalinha.bmp") == 0) {
-                    printf("Imagem carregada!\n");
-                } else {
-                    printf("ERRO ao carregar!\n");
-                }
-                break;
-                
-            case 7:
-                printf("\nSaindo...\n");
-                break;
-                
-            default:
-                printf("\nOpção inválida!\n");
-        }
-    } while (opcao != 7);
-    
-    // Finalizar API
-    encerrarAPI();
-    return 0;
-}
-```
+O programa oferece um menu em console que permite testar todas as funcionalidades de processamento de imagens de forma interativa. Ao executar, o usuário tem acesso às seguintes opções:
+
+**Operações de Processamento (opções 1-4):**
+
+  - **Vizinho Próximo (NHI):** Aplica interpolação por vizinho mais próximo
+  - **Replicação:** Redimensiona a imagem usando técnica de replicação de pixels
+  - **Decimação:** Reduz a resolução da imagem por decimação
+  - **Média de Blocos:** Redimensiona calculando a média de blocos de pixels
+
+Para cada uma dessas operações, o sistema solicita o nível de zoom desejado (1x, 2x, 4x ou 8x) e executa o processamento, informando se foi concluído com sucesso ou se ocorreu algum erro (como timeout).
+
+**Outras Funcionalidades:**
+
+  - **Verificar Status:** Consulta se o hardware está pronto (PRONTO) ou ocupado (OCUPADO) processando
+  - **Enviar imagem BMP:** Carrega uma imagem em formato BMP para a memória do sistema
+  - **Sair:** Encerra o programa e libera os recursos da API
+
+O menu é executado em loop até que o usuário escolha a opção de saída, inicializando a API no início e finalizando-a adequadamente ao encerrar.
 
 </details>
 
@@ -1679,61 +1585,6 @@ int main() {
 ## 🛠️ Compilação e Execução
 
 O projeto utiliza um **Makefile automatizado** para simplificar o processo de compilação e execução, eliminando a necessidade de executar comandos individuais manualmente.
-
----
-
-### Makefile
-```makefile
-# Variáveis
-CC = gcc
-ASM = gcc
-CFLAGS = -std=c99 -Wall
-ASMFLAGS = 
-TARGET = pixel_test
-OBJS = main.o api.o
-
-# Regra padrão
-all: build
-
-# Compilação
-build: $(OBJS)
-	@echo "🔗 Linkando objetos..."
-	@$(CC) $(OBJS) -o $(TARGET)
-	@echo "✅ Executável '$(TARGET)' criado com sucesso!"
-
-# Compilar main.c
-main.o: main.c header.h
-	@echo "📦 Compilando main.c..."
-	@$(CC) -c main.c $(CFLAGS) -o main.o
-
-# Compilar api.s (Assembly)
-api.o: api.s
-	@echo "⚙️  Compilando api.s..."
-	@$(ASM) -c api.s $(ASMFLAGS) -o api.o
-
-# Executar programa
-run: build
-	@echo "🚀 Executando programa..."
-	@sudo ./$(TARGET)
-
-# Limpar arquivos compilados
-clean:
-	@echo "🧹 Limpando arquivos..."
-	@rm -f $(OBJS) $(TARGET)
-	@echo "✨ Limpeza concluída!"
-
-# Ajuda
-help:
-	@echo ""
-	@echo "📘 Comandos disponíveis:"
-	@echo "  make build  - Compila o programa"
-	@echo "  make run    - Compila e executa"
-	@echo "  make clean  - Remove arquivos compilados"
-	@echo "  make help   - Mostra esta mensagem"
-	@echo ""
-
-.PHONY: all build run clean help
-```
 
 ---
 
@@ -2340,150 +2191,8 @@ Sistema desmapeia memória e encerra corretamente.
 
 ---
 
-## 🧪 Testes e Validação
-
 <details>
-<summary><h3>📊 Plano de Testes</h3></summary>
-
-### Objetivos dos Testes
-
-1. ✅ Validar comunicação HPS–FPGA
-2. ✅ Verificar funcionamento dos algoritmos
-3. ✅ Avaliar desempenho do sistema
-4. ✅ Garantir estabilidade e confiabilidade
-
----
-
-### Casos de Teste
-
-#### Teste 1: Inicialização da API
-
-**Objetivo:** Verificar mapeamento de memória.
-
-**Procedimento:**
-```bash
-sudo ./pixel_test
-```
-
-**Resultado Esperado:**
-```
-=== INICIANDO API ===
-DEBUG: iniciarAPI() retornou: 0
-API OK!
-```
-
-**Critério de Aceitação:** Retorno 0 (sucesso).
-
----
-
-#### Teste 2: Verificação de Status
-
-**Objetivo:** Validar leitura do registrador PIO_DONE.
-
-**Procedimento:**
-```
-Opção: 5
-```
-
-**Resultado Esperado:**
-```
-Status: Hardware PRONTO (Done=1)
-```
-
-**Critério de Aceitação:** Flag DONE lida corretamente.
-
----
-
-#### Teste 3: Transferência de Imagem
-
-**Objetivo:** Testar escrita de 19.200 pixels.
-
-**Procedimento:**
-```
-Opção: 6 > ./ImgGalinha.bmp
-```
-
-**Resultado Esperado:**
-```
-Progresso: 19200/19200 pixels (100.0%)
-Imagem enviada com sucesso!
-```
-
-**Critério de Aceitação:** Todos os pixels transferidos sem erro.
-
-**Métrica de Desempenho:** < 500ms para transferência completa.
-
----
-
-#### Testes de Algoritmos
-
-**Critério de Aceitação:** 
-- Retorno 0 (sucesso)
-- Imagem visível no monitor
-- Sem distorções ou artefatos
-
-##### Teste 4: Algoritmo NHI (Zoom 2x)
-
-**Objetivo:** Validar interpolação por vizinho mais próximo.
-
-**Procedimento:**
-```
-Opção: 1 > Zoom 2x
-```
-
-**Resultado Esperado:**
-```
-Executando Vizinho Próximo (zoom=2x)...
-Operação concluída com sucesso!
-```
-
-**Verificação Visual:** Imagem ampliada 2x exibida no VGA.
-
----
-
-##### Teste 5: Algoritmo Replicação (Zoom 4x)
-
-**Objetivo:** Testar replicação de pixels.
-
-**Entrada:** Imagem 160×120  
-**Saída Esperada:** Imagem 640×480 (4x ampliada)
-
----
-
-##### Teste 6: Algoritmo Decimação (Zoom 0.5x)
-
-**Objetivo:** Testar Decimação.
-
-**Entrada:** Imagem 160×120  
-**Saída Esperada:** Imagem 80×60
-
----
-
-##### Teste 7: Algoritmo Média de Blocos (Zoom 2x)
-
-**Objetivo:** Testar Média de Blocos.
-
-
----
-
-### Matriz de Rastreabilidade
-
-| Requisito | Teste | Status |
-|-----------|-------|--------|
-| RF01 - API em Assembly | Teste 1 | ✅ Passou |
-| RF02 - 4 Algoritmos | Testes 4-7 | ✅ Passou |
-| RF03 - Grayscale 8 bits | Teste 3 | ✅ Passou |
-| RF04 - Leitura BMP | Teste 3 | ✅ Passou |
-| RF05 - Transferência HPS→FPGA | Teste 3 | ✅ Passou |
-| RF06 - Saída VGA | Testes 4-7 | ✅ Passou |
-| RNF01 - Timeout | Teste 8 | ✅ Passou |
-
-</details>
-
----
-
-<details>
-<summary><h3>📈 Resultados dos Testes</h3></summary>
+<summary><h3>📈 Resultados observados durante testes</h3></summary>
 
 
 **Ambiente de Teste:**
@@ -2545,32 +2254,6 @@ Operação concluída com sucesso!
    - **Causa:** Polling na função write_pixel causando atraso desnecessário no carregamento dos pixels
    - **Solução:** Remoção do polling
 
-
----
-
-### Evidências Visuais
-
-**Imagem Original (160×120):**
-```
-[Galinha em escala de cinza]
-```
-
-**Após NHI 2x (320×240):**
-```
-[Galinha ampliada, bordas nítidas]
-```
-
-**Após Replicação 4x (640×480):**
-```
-[Galinha ampliada, efeito pixelado]
-```
-
-**Após Média 2x (320×240):**
-```
-[Galinha ampliada, suavizada]
-```
-
-*(Capturas de tela via câmera apontada para monitor VGA)*
 
 </details>
 
