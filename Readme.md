@@ -217,25 +217,38 @@ Esta seção contém informações técnicas detalhadas para **engenheiros de co
 
 ### Contexto Histórico
 
-O **coprocessador original (Problema 1)** apresentava estrutura **monolítica**, onde cada algoritmo realizava **todas as etapas** (leitura, processamento, escrita) de forma autônoma. Essa abordagem funcionava em FPGA puro, mas dificultava:
+---
 
-- Análise modular do comportamento
-- Integração com HPS
-- Controle externo sobre memória
+O **coprocessador original (Problema 1)** apresentava uma estrutura **monolítica**, na qual cada algoritmo de redimensionamento realizava **todas as etapas do fluxo de processamento** — leitura da imagem, cálculo e escrita — de forma **autônoma**.  
+Essa abordagem funcionava corretamente para um sistema totalmente em FPGA, mas dificultava a **análise modular** e inviabilizava a **integração com o HPS**, já que as memórias eram fixas e não havia controle externo sobre a escrita.
 
-### Evolução: Problema 1 → Problema 2
+O **coprocessador revisado (Problema 2)** foi reestruturado com foco em **clareza, modularização e interoperabilidade**.  
+As principais diferenças estão resumidas a seguir:
 
-| Aspecto | Problema 1 | Problema 2 |
-|---------|-----------|-----------|
-| **Organização** | Algoritmos com leitura+processamento+escrita | Algoritmos puramente funcionais |
-| **Controle** | FSM única coordenava tudo | FSM principal + Controlador Redimensionamento |
-| **Escrita** | Embutida nos algoritmos | FSM exclusiva para escrita |
-| **Memória** | ROM 1 porta (19.200 pixels) | RAM dual-port (76.800 pixels) |
-| **Integração HPS** | Inexistente | Comunicação via PIOs |
+| Aspecto | Coprocessador do Problema 1 | Coprocessador do Problema 2 |
+|----------|------------------------------|------------------------------|
+| **Organização dos algoritmos** | Cada algoritmo (Replicação, Decimação, etc.) realizava leitura, processamento e escrita internamente. | Algoritmos transformados em módulos puramente funcionais — apenas processam pixels — para facilitar análise e depuração. |
+| **Controle de fluxo** | A Unidade de Controle coordenava todo o processo, mas sem distinguir leitura, processamento e escrita. | Introdução de um módulo **`ControladorRedimensionamento`** para coordenar operações e monitorar o progresso dos algoritmos. |
+| **Controle de escrita** | Escrita direta e fixa em memória, embutida na lógica dos algoritmos. | Criação de uma **FSM exclusiva para controle de escrita**, isolada da FSM principal, permitindo gravação controlada pelo HPS. |
+| **Memória de imagem** | ROM de 1 porta (somente leitura) com imagem sintetizada. | **RAM dual-port de 76 800 pixels**, permitindo leitura e escrita simultâneas e recebimento de imagens externas. |
+| **Integração com HPS** | Inexistente — operação autônoma em FPGA. | Preparada para integração HPS–FPGA, com **comunicação via PIOs** e utilização da ponte do projeto **`my_first_fpga-hps_base`**. |
+| **Flexibilidade e expansão** | Estrutura fixa, sem interface de controle externo. | Arquitetura modular, escalável e apta a receber comandos e dados do processador ARM. |
+
+Em síntese, o novo coprocessador manteve o **núcleo funcional original** (FSM principal e algoritmos), mas incorporou **módulos auxiliares de controle e memória** que possibilitam sua integração ao sistema híbrido **HPS–FPGA**, tornando o projeto mais **organizado, flexível e interoperável**.
+
+As principais alterações estruturais se concentraram em dois pontos: 
+- **Criação de um módulo ControladorRedimensionamento**, responsável por coordenar a leitura, o processamento e a escrita, tarefa anteriormente atribuida aos próprios algoritmos de redimensionamento; 
+- **Implementação de uma FSM de controle de escrita** e **substituição da ROM por uma RAM dual-port**, etapas fundamentais para preparar o sistema para comunicação com o HPS. 
+
+Os próximos tópicos abordarão com mais detalhamento as principais mudanças feitas no circuito.
 
 ---
 
 #### 🔹 1. Separação dos Algoritmos
+
+O coprocessador desenvolvido no **Problema 1** possuía uma estrutura na qual **cada algoritmo de redimensionamento** — *Replicação*, *Decimação*, *Vizinho Mais Próximo* e *Média de Blocos* — era responsável por **todo o fluxo de execução**, incluindo **leitura da imagem**, **processamento** e **escrita dos pixels de saída**. Essa abordagem funcionava corretamente, mas dificultava a depuração e a análise visual do comportamento interno do sistema, já que a lógica de controle estava embutida em cada módulo.
+
+No **Problema 2**, essa arquitetura foi **reorganizada** com foco em **clareza e modularidade**, permitindo observar e testar separadamente cada parte do fluxo de processamento. Os algoritmos foram **separados em módulos individuais**, não para alterar seu funcionamento, mas para **facilitar o entendimento e o acompanhamento das operações internas** no Verilog.
 
 **Antes (Problema 1):**
 ```verilog
@@ -268,7 +281,8 @@ module Replicacao (
 
 #### 🔹 2. Controlador de Redimensionamento
 
-Novo módulo centraliza coordenação das operações:
+**Novo módulo que centraliza coordenação das operações:** O módulo **ControladorRedimensionamento** foi introduzido para centralizar o controle das operações internas do coprocessador, coordenando a leitura de pixels, o processamento em cada algoritmo e a escrita dos resultados na memória.
+
 
 **Estrutura:**
 ```verilog
@@ -295,18 +309,13 @@ module ControladorRedimensionamento (
 
 **Funcionamento:**
 
-1. **Inicialização:** Recebe `start=1` e reinicia contadores
-2. **Loop de Processamento:**
-   ```
-   Para cada pixel da imagem origem:
-       - Calcula mem1_addr (coordenadas origem)
-       - Lê pixel em mem1_data
-       - Envia para algoritmo selecionado
-       - Aguarda alg_ready=1
-       - Calcula mem2_addr (coordenadas destino)
-       - Escreve pixel_from_alg com we=1
-   ```
-3. **Finalização:** Sinaliza `done_redim=1`
+1. **Inicialização:** O controlador é ativado através do sinal start. Nesse instante, ele reinicia contadores internos de coordenadas (x_orig, y_orig, x_dest, y_dest) e seleciona o algoritmo ativo de acordo com o comando recebido.
+
+2. **Leitura e Processamento** Em cada ciclo de clock, o controlador solicita um pixel da memória de origem (mem1_addr) e o envia para o módulo do algoritmo correspondente (pixel_in). Quando o algoritmo sinaliza que o processamento foi concluído (ready = 1), o controlador armazena o valor resultante (pixel_out).
+
+3. **Escrita do Resultado** O controlador habilita o sinal we = 1 e grava o resultado no endereço de destino (mem2_addr), incrementando os contadores até o fim do processamento da imagem.
+
+4. **Finalização** Após o processamento completo, o sinal done_redim é ativado, informando à FSM principal que a operação foi concluída e que os dados podem ser exibidos via VGA.
 
 **Importante:** Este módulo **não substitui** a FSM principal, apenas gerencia o **fluxo de redimensionamento**.
 
@@ -315,6 +324,20 @@ module ControladorRedimensionamento (
 #### 🔹 3. FSM de Controle de Escrita
 
 FSM **independente** para receber pixels do HPS:
+
+A FSM de controle de escrita foi adicionada ao projeto, em UnidadeControle, para **gerenciar a transferência de dados do HPS para a RAM 1 (Dual-Port).**
+Esse circuito atua como uma interface intermediária entre o HPS, que envia pixels via barramento de dados, e a memória, garantindo que cada operação de escrita ocorra de forma sincronizada e controlada.
+Sem essa FSM, o HPS precisaria lidar diretamente com sinais de escrita e endereçamento no hardware, o que tornaria o sistema mais suscetível a erros de temporização.
+
+**Motivação da inclusão::**
+
+- A antiga ROM não permitia escrita, impossibilitando o carregamento de novas imagens.
+
+- A RAM Dual-Port resolveu essa limitação, mas ainda exigia um mecanismo de controle para escrita sequencial.
+
+- A FSM foi criada justamente para esse papel: receber solicitações do HPS, endereçar a RAM automaticamente e confirmar o término da gravação.
+
+- Com isso, o HPS apenas envia os dados e ativa um sinal de escrita, enquanto todo o processo físico de armazenamento é tratado pela FSM no FPGA.
 
 **Diagrama de Estados:**
 ```
@@ -338,44 +361,36 @@ FSM **independente** para receber pixels do HPS:
     └──────────────┘
 ```
 
-**Código Simplificado:**
-```verilog
-always @(posedge clk or posedge reset) begin
-    if (reset) begin
-        state <= IDLE_WRITE;
-        addr_counter <= 0;
-    end else begin
-        case (state)
-            IDLE_WRITE: begin
-                if (SolicitaEscrita) begin
-                    state <= WRITE;
-                    we <= 1;
-                end
-            end
-            
-            WRITE: begin
-                ram[addr_counter] <= dados_pixel_hps;
-                addr_counter <= addr_counter + 1;
-                
-                if (addr_counter >= VRAM_SIZE - 1)
-                    state <= WAIT_WRITE;
-            end
-            
-            WAIT_WRITE: begin
-                we <= 0;
-                done_write <= 1;
-                state <= IDLE_WRITE;
-            end
-        endcase
-    end
-end
-```
+**Descrição dos estados:**
+
+**IDLE_WRITE:** estado inicial; a FSM permanece aguardando o sinal SolicitaEscrita do HPS.
+
+**WRITE:** grava o pixel recebido (dados_pixel_hps) na RAM e incrementa o contador de endereço.
+
+**WAIT_WRITE:** finaliza a operação após atingir o endereço máximo (MAX_ADDR) e emite done_write, retornando ao estado inicial.
+
+**Comportamento geral:**
+
+- Durante cada ciclo de clock, a FSM avalia se há uma solicitação ativa do HPS.
+- Quando detectada, ela entra no estado WRITE, realizando a gravação de um pixel por ciclo até completar toda a imagem.
+- Ao finalizar, o estado WAIT_WRITE gera um pulso de conclusão e reinicializa o contador, permitindo uma nova transmissão.
 
 ---
 
 #### 🔹 4. Substituição ROM → RAM Dual-Port
 
-**Justificativa:** Permitir leitura e escrita simultâneas.
+A substituição da ROM por uma RAM Dual-Port foi necessária porque a ROM é um componente de somente leitura, não permitindo a escrita de novos dados. Essa limitação impedia o carregamento dinâmico da imagem enviada do HPS para o FPGA, etapa essencial para o funcionamento do sistema.
+
+Com a RAM Dual-Port, torna-se possível realizar leitura e escrita de forma independente, utilizando duas portas dedicadas:
+
+- Porta A: usada pelo HPS para escrever novos dados na memória;
+- Porta B: usada pelo hardware de processamento para ler os dados já armazenados.
+
+Embora o controle de temporização continue definido pela FSM e pelo clock, **o uso de duas portas elimina a contenção de acesso típica das memórias de porta única.**
+Em uma memória simples, leitura e escrita compartilham o mesmo barramento, o que obriga o sistema a intercalar as operações para evitar conflito.
+Na RAM Dual-Port, cada porta possui seu próprio conjunto de sinais (endereços, dados e controle), permitindo que o HPS atualize regiões da memória enquanto o processamento lê outras, sem disputas físicas entre os acessos.
+
+Assim, o projeto passa a suportar atualização contínua de dados, mantendo a integridade das operações e permitindo a integração direta entre HPS e FPGA sem interrupções no fluxo de processamento.
 
 | Característica | ROM (Problema 1) | RAM Dual-Port (Problema 2) |
 |----------------|------------------|----------------------------|
@@ -397,11 +412,6 @@ IP Catalog > RAM: 2-PORT
 - Clock: Shared (50 MHz)
 ```
 
-**Vantagens:**
-- HPS escreve via Porta A sem bloquear leitura
-- Algoritmos leem via Porta B continuamente
-- Elimina contenção de acesso
-
 </details>
 
 ---
@@ -409,7 +419,7 @@ IP Catalog > RAM: 2-PORT
 <details>
 <summary><h3>🔗 Integração HPS–FPGA</h3></summary>
 
-### Contexto: Projeto Base Intel
+### Integração HPS-FPGA
 
 A integração foi desenvolvida sobre o **`my_first_fpga-hps_base`**, projeto de referência oficial da Intel que fornece:
 
@@ -472,62 +482,18 @@ O `my_first_fpga-hps_base` **resolve tudo isso automaticamente**.
 
 ### Configuração dos PIOs no Platform Designer
 
-#### 1. Adicionar PIOs
+A comunicação entre o **HPS** e o **coprocessador** foi realizada utilizando **PIOs (Parallel Input/Output)** configurados no **Platform Designer** do Quartus.
 
-No **Platform Designer** (antigo Qsys):
+Os PIOs foram usados para criar **registradores mapeados em memória**, acessíveis tanto pelo software (HPS) quanto pela lógica Verilog. 
 
-1. `File` > `Open` > Selecionar `soc_system.qsys`
-2. `IP Catalog` > `Avalon Interface` > `PIO (Parallel I/O)`
+Principais PIOs criados: 
 
-**Configuração pio_instruction:**
-```
-Name: pio_instruction
-Direction: Input (FPGA recebe do HPS)
-Data Width: 32 bits
-Base Address: 0x0000 (offset 0x00)
-```
+- pio_instruction – para envio de instruções e dados de controle do HPS; 
+- pio_start – sinal de ativação do processamento; 
+- pio_done e pio_donewrite – sinais de status de conclusão de escrita e redimensionamento.
 
-**Configuração pio_start:**
-```
-Name: pio_start
-Direction: Input
-Data Width: 1 bit
-Base Address: 0x0030 (offset 0x30)
-```
+Esses sinais foram mapeados no barramento Lightweight do HPS e conectados à nossa **Unidade de Controle** dentro do módulo ghrd_top.v.
 
-**Configuração pio_done:**
-```
-Name: pio_done
-Direction: Output (FPGA envia para HPS)
-Data Width: 1 bit
-Base Address: 0x0020 (offset 0x20)
-```
-
-**Configuração pio_donewrite:**
-```
-Name: pio_donewrite
-Direction: Output
-Data Width: 1 bit
-Base Address: 0x0040 (offset 0x40)
-```
-
-#### 2. Conectar ao Barramento
-
-- Conectar `clk` de todos PIOs ao `h2f_lw_axi_clock`
-- Conectar `reset` ao `h2f_lw_axi_reset`
-- Conectar interface Avalon ao `h2f_lw_axi_master`
-
-#### 3. Gerar Sistema
-
-```bash
-# Via GUI
-Generate HDL > Generate
-
-# Via linha de comando
-qsys-generate soc_system.qsys --synthesis=VERILOG
-```
-
----
 
 ### Adaptação do ghrd_top.v
 
@@ -622,7 +588,6 @@ VRAM Virtual: 0 - 19199 (160×120 pixels)
 - `00` = 1x (sem zoom)
 - `01` = 2x
 - `10` = 4x
-- `11` = 8x
 
 **Opcodes:**
 | Código | Valor | Operação |
@@ -650,192 +615,524 @@ VRAM Virtual: 0 - 19199 (160×120 pixels)
 
 ## Funções da API Assembly
 
-### 1️⃣ `iniciarAPI()` - Inicialização
+**Conceito Fundamental: Memory-Mapped I/O**
+
+A FPGA não é acessada como um "dispositivo externo", mas sim como se fosse **memória RAM**. Registradores da FPGA são mapeados em endereços de memória que o ARM pode ler/escrever diretamente.
+
+```
+┌─────────────────────────────────────┐
+│   Espaço de Endereços Físicos       │
+├─────────────────────────────────────┤
+│  0x00000000 - RAM do sistema        │
+│  0xC0000000 - Periféricos           │
+│  0xFF200000 - Lightweight Bridge ◄──┼─── FPGA aqui!
+│  0xFFFFFFFF - Fim                   │
+└─────────────────────────────────────┘
+```
+
+#### 1️⃣ `iniciarAPI()` - Inicialização
+
+Estabelece a conexão entre o processador ARM (HPS) e a FPGA através de memory mapping.
 
 **Propósito:** Abrir `/dev/mem` e mapear região FPGA na memória virtual.
 
-**Syscalls ARM:**
+---
+
+##### **ETAPA 1: Abrir `/dev/mem`**
+
 ```assembly
-MOV r7, #5          @ SVC open
-SVC 0
-MOV r7, #192        @ SVC mmap2
-SVC 0
+LDR r0, =.LC0          ; r0 = "/dev/mem"
+LDR r1, =4098          ; r1 = O_RDWR | O_SYNC
+MOV r2, #0             ; r2 = mode (não usado)
+MOV r7, #5             ; syscall 5 = open()
+SVC 0                  ; Chama kernel
+MOV r4, r0             ; r4 = file descriptor retornado
 ```
 
-**Parâmetros de mmap2:**
-```
-r0 = NULL           @ Kernel escolhe endereço
-r1 = 0x1000         @ Tamanho: 4 KB
-r2 = 3              @ PROT_READ | PROT_WRITE
-r3 = 1              @ MAP_SHARED
-r4 = fd             @ File descriptor
-r5 = 0xFF200        @ Offset físico / 4096
-```
+**O que é `/dev/mem`?**
+- Arquivo especial do Linux que representa **toda a memória física**
+- Requer permissões root
+- Permite acesso direto ao hardware (perigoso mas necessário)
 
-**Fluxo:**
-```
-1. Abrir /dev/mem (flags: O_RDWR | O_SYNC = 4098)
-2. Validar file descriptor (≠ -1)
-3. Mapear 0xFF200000 → endereço virtual
-4. Armazenar ponteiro em FPGA_ADRS
-5. Retornar 0 (sucesso) ou -1 (erro)
-```
+**Flags importantes:**
+- `O_RDWR` (2) = leitura + escrita
+- `O_SYNC` (4096) = sincronização imediata com hardware
+- Total: 4098 = 2 + 4096
 
-**Código Assembly:**
+**Verificação de erro:**
 ```assembly
-iniciarAPI:
-    PUSH {r4-r7, lr}
-    
-    LDR  r0, =.LC0          @ "/dev/mem"
-    LDR  r1, =4098          @ O_RDWR | O_SYNC
-    MOV  r2, #0
-    MOV  r7, #5             @ syscall open
-    SVC  0
-    MOV  r4, r0             @ fd em r4
-    
-    CMP  r4, #-1
-    BEQ  .L_ERROR
-    
-    MOV  r0, #0             @ addr = NULL
-    LDR  r1, =LW_SPAM       @ length = 0x1000
-    LDR  r1, [r1]
-    MOV  r2, #3             @ prot = RW
-    MOV  r3, #1             @ flags = MAP_SHARED
-    LDR  r5, =LW_BASE       @ offset = 0xFF200
-    LDR  r5, [r5]
-    MOV  r7, #192           @ syscall mmap2
-    SVC  0
-    
-    LDR  r1, =FPGA_ADRS
-    STR  r0, [r1]           @ Salva ponteiro
-    
-    CMP  r0, #-1
-    BNE  .L_SUCCESS
-    
-.L_ERROR:
-    MOV  r0, #-1
-    
-.L_SUCCESS:
-    POP  {r4-r7, pc}
+CMP r4, #-1            ; open() retorna -1 em erro
+BNE .L_MMAP_Setup      ; Se != -1, sucesso
+LDR r0, =.LC1          ; Senão, imprime erro
+BL puts
+```
+
+---
+
+##### **ETAPA 2: Mapear Memória com `mmap()`**
+
+Esta é a parte mais importante! O `mmap()` cria uma "janela" no espaço de endereços do processo ARM que aponta diretamente para a FPGA.
+
+```assembly
+MOV r0, #0             ; addr = NULL (kernel escolhe endereço)
+LDR r1, =LW_SPAM       
+LDR r1, [r1]           ; r1 = 0x1000 (4096 bytes = tamanho)
+MOV r2, #3             ; r2 = PROT_READ | PROT_WRITE
+MOV r3, #1             ; r3 = MAP_SHARED
+LDR r4, =FILE_DESCRIPTOR
+LDR r4, [r4]           ; r4 = fd do /dev/mem
+LDR r5, =LW_BASE
+LDR r5, [r5]           ; r5 = 0xFF200 (endereço físico)
+MOV r7, #192           ; syscall 192 = mmap()
+SVC 0
+```
+
+**Parâmetros do mmap() explicados:**
+
+| Registrador | Valor | Significado |
+|-------------|-------|-------------|
+| **r0** | NULL | Kernel escolhe onde mapear |
+| **r1** | 0x1000 | Mapeia 4KB (tamanho da região) |
+| **r2** | 3 | `PROT_READ \| PROT_WRITE` (leitura + escrita) |
+| **r3** | 1 | `MAP_SHARED` (mudanças afetam hardware) |
+| **r4** | fd | File descriptor do `/dev/mem` |
+| **r5** | 0xFF200 | **Offset físico da FPGA** |
+
+**O que acontece internamente:**
+
+```
+ANTES do mmap():
+┌─────────────────────────────────┐
+│ Processo ARM (espaço virtual)   │
+├─────────────────────────────────┤
+│ Código                          │
+│ Dados                           │
+│ Heap                            │
+│ Stack                           │
+└─────────────────────────────────┘
+         ❌ Não vê a FPGA
+
+
+DEPOIS do mmap():
+┌─────────────────────────────────┐
+│ Processo ARM (espaço virtual)   │
+├─────────────────────────────────┤
+│ Código                          │
+│ Dados                           │
+│ Heap                            │
+│ Stack                           │
+│ ┌─────────────────────────────┐ │
+│ │ Janela mapeada (0xXXXXXXXX)│ │◄── Retornado em r0
+│ │  ↓ aponta para ↓           │ │
+│ │  FPGA (0xFF200000)         │ │
+│ └─────────────────────────────┘ │
+└─────────────────────────────────┘
+         ✅ Pode acessar FPGA!
+```
+
+**Por que 0xFF200 e não 0xFF200000?**
+
+```assembly
+LW_BASE: .word 0xff200    ; Apenas offset, não endereço completo!
+```
+
+O kernel do Linux **adiciona zeros automaticamente** porque:
+- O offset do `mmap()` deve ser múltiplo do tamanho da página (4KB = 0x1000)
+- 0xFF200 na verdade representa 0xFF200**000** (deslocado 12 bits)
+- Isso é uma convenção da syscall `mmap()`
+
+---
+
+##### **ETAPA 3: Salvar Ponteiro Virtual**
+
+```assembly
+MOV r4, r0             ; r4 = ponteiro virtual retornado
+LDR r1, =FPGA_ADRS
+STR r4, [r1]           ; Salva em variável global
+```
+
+**O que é esse ponteiro?**
+- Endereço virtual no espaço do processo (ex: 0xB6F00000)
+- Quando você escreve nesse endereço, o kernel traduz para 0xFF200000 (físico)
+- É isso que permite `STR r2, [r4, #0x00]` escrever direto na FPGA!
+
+**Fluxo completo após mapeamento:**
+
+```
+1. CPU ARM executa: STR r2, [r4, #0x00]
+                          ↓
+2. MMU traduz: endereço virtual → 0xFF200000 (físico)
+                          ↓
+3. Barramento AXI encaminha para Lightweight Bridge
+                          ↓
+4. Bridge conecta ao Avalon Bus da FPGA
+                          ↓
+5. PIO recebe escrita no offset 0x00
+                          ↓
+6. Hardware FPGA processa!
 ```
 
 ---
 
 ### 2️⃣ `encerrarAPI()` - Finalização
 
-**Propósito:** Desalocar memória e fechar file descriptor.
+Libera recursos e fecha a conexão.
 
-**Syscalls:**
+##### **ETAPA 1: Desmapear memória**
+
 ```assembly
-MOV r7, #91         @ munmap
-SVC 0
-MOV r7, #6          @ close
+LDR r0, =FPGA_ADRS
+LDR r0, [r0]           ; r0 = ponteiro virtual
+LDR r1, =LW_SPAM
+LDR r1, [r1]           ; r1 = 0x1000 (tamanho)
+MOV r7, #91            ; syscall 91 = munmap()
 SVC 0
 ```
 
-**Código:**
+**O que faz:**
+- Remove a "janela" do espaço de endereços
+- Libera recursos do kernel
+- Tenta acessar `FPGA_ADRS` depois disso = **Segmentation Fault**!
+
+##### **ETAPA 2: Fechar arquivo**
+
 ```assembly
-encerrarAPI:
-    PUSH {r4-r7, lr}
-    
-    LDR  r0, =FPGA_ADRS     @ Endereço mapeado
-    LDR  r0, [r0]
-    LDR  r1, =LW_SPAM       @ Tamanho: 4KB
-    LDR  r1, [r1]
-    MOV  r7, #91            @ syscall munmap
-    SVC  0
-    
-    CMP  r0, #0
-    BNE  .L_ERROR_END
-    
-    LDR  r0, =FILE_DESCRIPTOR
-    LDR  r0, [r0]
-    MOV  r7, #6             @ syscall close
-    SVC  0
-    
-    MOV  r0, #0
-    
-.L_ERROR_END:
-    POP  {r4-r7, pc}
+LDR r0, =FILE_DESCRIPTOR
+LDR r0, [r0]
+MOV r7, #6             ; syscall 6 = close()
+SVC 0
 ```
+
+Fecha o `/dev/mem`, liberando o file descriptor.
+
+**Retorno:** 0 (sucesso) ou -1 (erro)
 
 ---
+
+### Funções de comando para FPGA
 
 ### 3️⃣ `write_pixel(address, pixel_data)` - Escrita de Pixel
 
+Escreve um pixel na VRAM da FPGA usando protocolo de handshake de 2 etapas.
+
 **Parâmetros:**
-- `r0`: Endereço (0-19199)
-- `r1`: Valor do pixel (0-255)
+- `r0`: Endereço do pixel (0-19199)
+- `r1`: Valor do pixel em grayscale (0-255)
 
-**Algoritmo:**
-```
-1. Validar: address < 19200?
-2. Empacotar:
-   - Endereço << 5 nos bits [19:5]
-   - Pixel << 20 nos bits [27:20]
-   - WE = 1 no bit [4]
-3. Enviar com WE=1
-4. Enviar com WE=0 (limpar flag)
-```
-
-**Código Completo:**
-```assembly
-write_pixel:
-    push    {r4-r6, lr}
-    ldr     r4, =FPGA_ADRS
-    ldr     r4, [r4]
-    
-    cmp     r0, #19200          @ Validação
-    bhs     .L_INVALID_ADDR
-    
-.L_PACK_DATA:
-    @ Endereço nos bits [19:5]
-    lsl     r2, r0, #5
-    ldr     r6, =MASK_ADDR      @ 0x000FFFE0
-    ldr     r6, [r6]
-    and     r2, r2, r6
-    
-    @ Pixel nos bits [27:20]
-    lsl     r3, r1, #20
-    and     r3, r3, #0x0FF00000
-    orr     r2, r2, r3
-    
-    @ SolicitaEscrita = 1 (bit 4)
-    mov     r3, #1
-    lsl     r3, r3, #4
-    orr     r2, r2, r3
-    
-    @ Enviar com WE=1
-    str     r2, [r4, #PIO_INSTRUCT]
-    dmb     sy                  @ Memory barrier
-    
-    @ Limpar WE (bit 4)
-    bic     r2, r2, r3
-    str     r2, [r4, #PIO_INSTRUCT]
-    dmb     sy
-    
-    b       .L_EXIT
-    
-.L_INVALID_ADDR:
-    mov     r0, #-1
-    
-.L_EXIT:
-    mov     r0, #0
-    pop     {r4-r6, pc}
-```
-
-**Observação Crítica:** O `DMB SY` (Data Memory Barrier) é **essencial** para garantir que:
-- O write seja visível para o hardware FPGA
-- Não haja reordenação de instruções pelo pipeline ARM
-- A sincronização entre CPU e lógica programável seja mantida
+**Retorno:**
+- `0`: Sucesso
+- `-1`: Endereço inválido
 
 ---
 
-### 4️⃣-7️⃣ Funções de Processamento
+#### **ETAPA 1: Validação e Carregamento do Ponteiro**
+
+```assembly
+push    {r4-r6, lr}        ; Salva contexto
+ldr     r4, =FPGA_ADRS
+ldr     r4, [r4]           ; r4 = ponteiro para FPGA
+
+cmp     r0, #19200         ; Verifica se endereço < 19200
+bhs     .L_INVALID_ADDR    ; Branch if Higher or Same (unsigned)
+```
+
+**Por que 19200?**
+- Imagem: 160×120 pixels = 19.200 pixels totais
+- Endereços válidos: 0 até 19199
+- Qualquer valor ≥ 19200 causa overflow na VRAM
+
+---
+
+#### **ETAPA 2: Empacotamento do Endereço (bits [19:5])**
+
+```assembly
+.L_PACK_DATA:
+    lsl     r2, r0, #5           ; Desloca endereço 5 bits à esquerda
+    ldr     r6, =MASK_ADDR       ; Carrega máscara
+    ldr     r6, [r6]             ; r6 = 0x000FFFE0
+    and     r2, r2, r6           ; Aplica máscara
+```
+
+**O que acontece:**
+
+```
+Exemplo: endereço = 100 (0x64)
+
+1. Shift left 5 bits:
+   0x64 << 5 = 0xC80 = 0b110010000000
+
+2. Aplicar máscara 0x000FFFE0:
+   0x00000C80 & 0x000FFFE0 = 0x00000C80
+   
+   Resultado: endereço nos bits [19:5]
+```
+
+**Por que shift de 5 bits?**
+- O hardware espera endereço nos bits **[19:5]** do registrador PIO
+- Bits [4:0] são reservados para flags e opcode
+- Isso permite endereçar até 2^15 = 32.768 pixels
+
+---
+
+#### **ETAPA 3: Empacotamento do Pixel (bits [27:20])**
+
+```assembly
+lsl     r3, r1, #20          ; Desloca pixel 20 bits à esquerda
+and     r3, r3, #0x0FF00000  ; Mascara 8 bits
+orr     r2, r2, r3           ; Combina endereço + pixel
+```
+
+**Formato do pacote parcial:**
+
+```
+ 31      28 27      20 19           5  4    0
+┌──────────┬──────────┬──────────────┬──────┐
+│   0000   │  Pixel   │   Endereço   │ 00000│
+│ (4 bits) │ (8 bits) │  (15 bits)   │(5bits)│
+└──────────┴──────────┴──────────────┴──────┘
+```
+
+**Exemplo completo:**
+```
+Endereço = 100, Pixel = 0xFF (branco)
+
+Após shift e máscara:
+  Endereço: 0x00000C80 (bits [19:5])
+  Pixel:    0x0FF00000 (bits [27:20])
+  
+ORR (combinar):
+  0x00000C80 | 0x0FF00000 = 0x0FF00C80
+```
+
+---
+
+#### **ETAPA 4: Ativar Flag de Escrita (bit [4])**
+
+```assembly
+mov     r3, #1
+lsl     r3, r3, #4           ; r3 = 0x10 (bit 4 ativado)
+orr     r2, r2, r3           ; Adiciona flag SolicitaEscrita
+```
+
+**Pacote completo com SolicitaEscrita=1:**
+
+```
+ 31      28 27      20 19           5  4    3    0
+┌──────────┬──────────┬──────────────┬────┬──────┐
+│   0000   │  Pixel   │   Endereço   │ 1  │ 0000 │
+│ (4 bits) │ (8 bits) │  (15 bits)   │(WE)│(4bits)│
+└──────────┴──────────┴──────────────┴────┴──────┘
+
+Exemplo: 0x0FF00C90
+         = 0000 1111 1111 0000 0000 1100 1001 0000
+           ^^^^ ^^^^^^^^      ^^^^^^^^^^^^^ ^
+           Res.  Pixel=0xFF   Addr=100     WE=1
+```
+
+---
+
+#### **ETAPA 5: Enviar Primeiro Pacote (WE=1)**
+
+```assembly
+str     r2, [r4, #PIO_INSTRUCT]  ; Escreve no registrador da FPGA
+dmb     sy                        ; Data Memory Barrier
+```
+
+**O que acontece na FPGA:**
+1. PIO detecta escrita no registrador `PIO_INSTRUCT`
+2. FSM de Escrita lê o bit `SolicitaEscrita` (bit 4) = **1**
+3. Hardware **armazena** endereço e pixel, mas **ainda não grava na RAM**
+4. Aguarda pulso de confirmação (transição 1→0)
+
+**Por que DMB SY?**
+```assembly
+dmb sy  @ Data Memory Barrier - System
+```
+- **Garante que a escrita STR seja completada** antes de prosseguir
+- Previne reordenação de instruções pelo pipeline ARM
+- Essencial para sincronização CPU ↔ Hardware
+
+Sem DMB, o processador poderia:
+```
+STR r2, [r4, #PIO_INSTRUCT]  ; Enfileirado no store buffer
+BIC r2, r2, r3                ; Executado imediatamente!
+STR r2, [r4, #PIO_INSTRUCT]  ; FPGA vê ambos fora de ordem!
+```
+
+---
+
+#### **ETAPA 6: Limpar Flag de Escrita (bit [4])**
+
+```assembly
+bic     r2, r2, r3           ; BIC = Bit Clear (limpa bit 4)
+str     r2, [r4, #PIO_INSTRUCT]
+dmb     sy
+```
+
+**O que é BIC (Bit Clear)?**
+```
+BIC rd, rn, operand  →  rd = rn AND NOT(operand)
+
+Exemplo:
+  r2 = 0x0FF00C90  (WE=1)
+  r3 = 0x00000010  (máscara bit 4)
+  
+  BIC r2, r2, r3:
+    0x0FF00C90 AND NOT(0x10)
+    = 0x0FF00C90 AND 0xFFFFFFEF
+    = 0x0FF00C80  (WE=0)
+```
+
+**Pacote com SolicitaEscrita=0:**
+
+```
+ 31      28 27      20 19           5  4    3    0
+┌──────────┬──────────┬──────────────┬────┬──────┐
+│   0000   │  Pixel   │   Endereço   │ 0  │ 0000 │ ← Bit 4 = 0
+│ (4 bits) │ (8 bits) │  (15 bits)   │(WE)│(4bits)│
+└──────────┴──────────┴──────────────┴────┴──────┘
+```
+
+---
+
+#### **Por Que 2 Envios? (Protocolo de Pulso)**
+
+A FPGA detecta uma **transição de borda** (1→0) para confirmar a escrita:
+
+```
+        ┌─────┐
+WE:  ───┘     └─────  (Pulso de escrita)
+        
+        t1    t2
+        ↑     ↑
+     Prepara  Grava!
+```
+
+**Sequência temporal:**
+1. **t1**: CPU escreve com `WE=1` → FPGA captura endereço e pixel
+2. **DMB**: Garante que escrita chegou ao hardware
+3. **t2**: CPU escreve com `WE=0` → FPGA detecta borda 1→0
+4. **Resultado**: FSM de Escrita grava pixel na RAM
+
+**Sem o segundo envio:**
+```
+WE sempre = 1  →  FPGA não sabe quando gravar!
+```
+
+---
+
+#### **ETAPA 7: Tratamento de Erros e Retorno**
+
+```assembly
+b       .L_EXIT              ; Vai para retorno de sucesso
+
+.L_INVALID_ADDR:
+    mov     r0, #-1          ; Retorna -1 (erro)
+    b       .L_EXIT
+
+.L_EXIT:
+    mov     r0, #0           ; Retorna 0 (sucesso)
+    pop     {r4-r6, pc}      ; Restaura contexto e retorna
+```
+
+---
+
+## 🔍 Diagrama Completo do Fluxo
+
+```
+┌─────────────────────────────────────────────┐
+│   write_pixel(100, 0xFF)                    │
+└───────────────────┬─────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────┐
+│   1. Validar endereço < 19200               │
+│      ✓ OK                                   │
+└───────────────────┬─────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────┐
+│   2. Empacotar dados:                       │
+│      • Addr=100 → bits[19:5] = 0x00000C80   │
+│      • Pixel=0xFF → bits[27:20] = 0x0FF00000│
+│      • WE=1 → bit[4] = 0x10                 │
+│      Resultado: 0x0FF00C90                  │
+└───────────────────┬─────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────┐
+│   3. STR 0x0FF00C90, [FPGA+0x00]            │
+│      DMB SY ← Sincroniza                    │
+└───────────────────┬─────────────────────────┘
+                    │
+        ┌───────────▼───────────┐
+        │   FPGA PIO            │
+        │   • Lê WE=1           │
+        │   • Captura dados     │
+        │   • Aguarda pulso     │
+        └───────────┬───────────┘
+                    │
+┌───────────────────▼─────────────────────────┐
+│   4. BIC r2, r2, #0x10 → 0x0FF00C80         │
+│      STR 0x0FF00C80, [FPGA+0x00]            │
+│      DMB SY                                 │
+└───────────────────┬─────────────────────────┘
+                    │
+        ┌───────────▼───────────┐
+        │   FPGA FSM Escrita    │
+        │   • Detecta 1→0       │
+        │   • Grava na RAM:     │
+        │     RAM[100] = 0xFF   │
+        └───────────┬───────────┘
+                    │
+┌───────────────────▼─────────────────────────┐
+│   5. Retorna 0 (sucesso)                    │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## ⚡ Otimizações Aplicadas
+
+### ✅ **Fire-and-Forget (Sem Polling)**
+```assembly
+@ NÃO faz isso:
+.WAIT_DONE:
+    LDR r2, [r4, #PIO_DONE_WRITE]
+    TST r2, #1
+    BEQ .WAIT_DONE
+```
+
+**Por quê?**
+- Escrita de pixel é **muito rápida** (~100ns na FPGA)
+- Polling adicionaria **overhead desnecessário**
+- CPU pode continuar preparando próximo pixel
+
+**Trade-off:**
+- ✅ Throughput alto (até 10 milhões pixels/s)
+- ⚠️ Não há confirmação individual de erro
+- ✅ Sistema confia na velocidade do hardware
+
+---
+
+## 🎓 Resumo da Função
+
+| Etapa | Operação | Registrador | Resultado |
+|-------|----------|-------------|-----------|
+| 1 | Validar | `r0 < 19200` | Branch se inválido |
+| 2 | Shift endereço | `r0 << 5` | Bits [19:5] |
+| 3 | Shift pixel | `r1 << 20` | Bits [27:20] |
+| 4 | Combinar | `r2 = addr \| pixel` | Pacote parcial |
+| 5 | Setar WE | `r2 \| 0x10` | Pacote com WE=1 |
+| 6 | Enviar 1 | `STR + DMB` | FPGA captura |
+| 7 | Limpar WE | `BIC bit 4` | WE=0 |
+| 8 | Enviar 2 | `STR + DMB` | FPGA grava (1→0) |
+| 9 | Retornar | `r0 = 0` | Sucesso |
+
+---
+
+#### 4️⃣-7️⃣ Funções de Processamento
 
 Todas seguem o mesmo padrão:
 
-#### `replicacao(zoom)` | `decimacao(zoom)` | `NHI(zoom)` | `media_blocos(zoom)`
+##### `replicacao(zoom)` | `decimacao(zoom)` | `NHI(zoom)` | `media_blocos(zoom)`
 
 **Parâmetro:**
 - `r0`: Zoom (0=1x, 1=2x, 2=4x, 3=8x)
@@ -927,7 +1224,7 @@ empacotamento_instrucao_replic:
 
 ---
 
-### 8️⃣ `Flag_Done()` - Verificação de Status
+#### 8️⃣ `Flag_Done()` - Verificação de Status
 
 **Propósito:** Ler estado do registrador `PIO_DONE`.
 
@@ -1033,11 +1330,6 @@ MAP_SHARED = 0x1
 ### Memory Barriers
 
 **Por que são necessários?**
-
-O processador ARM usa:
-- **Pipeline** (instruções em paralelo)
-- **Cache** (dados em memória rápida)
-- **Store buffer** (writes pendentes)
 
 Sem barreiras, o hardware FPGA pode ver operações **fora de ordem**.
 
@@ -1147,85 +1439,6 @@ typedef struct {
 } BMPInfoHeader;
 
 #pragma pack(pop)
-```
-
-**Algoritmo:**
-```c
-int enviar_imagem_bmp(const char *filename) {
-    FILE *file = fopen(filename, "rb");
-    if (!file) {
-        printf("ERRO: Arquivo não encontrado\n");
-        return -1;
-    }
-    
-    // 1. Ler cabeçalhos
-    BMPHeader header;
-    BMPInfoHeader info;
-    fread(&header, sizeof(BMPHeader), 1, file);
-    fread(&info, sizeof(BMPInfoHeader), 1, file);
-    
-    // 2. Validar formato
-    if (header.type != 0x4D42) {
-        printf("ERRO: Não é um BMP válido\n");
-        fclose(file);
-        return -1;
-    }
-    
-    if (info.width != 160 || info.height != 120) {
-        printf("AVISO: Dimensões diferentes de 160x120\n");
-    }
-    
-    // 3. Calcular padding (linhas alinhadas a 4 bytes)
-    int bytes_per_pixel = info.bits_per_pixel / 8;
-    int row_size = info.width * bytes_per_pixel;
-    int padding = (4 - (row_size % 4)) % 4;
-    
-    // 4. Alocar buffer de linha
-    unsigned char *row_buffer = malloc(row_size);
-    
-    // 5. Processar imagem (linha por linha, de baixo para cima)
-    for (int y = info.height - 1; y >= 0; y--) {
-        // Posicionar no início da linha
-        fseek(file, header.offset + y * (row_size + padding), SEEK_SET);
-        fread(row_buffer, 1, row_size, file);
-        
-        // Processar pixels da linha
-        for (int x = 0; x < info.width; x++) {
-            unsigned char pixel_data;
-            
-            if (info.bits_per_pixel == 8) {
-                // Grayscale direto
-                pixel_data = row_buffer[x];
-            } 
-            else if (info.bits_per_pixel == 24) {
-                // BGR → Grayscale
-                int idx = x * 3;
-                unsigned char b = row_buffer[idx];
-                unsigned char g = row_buffer[idx + 1];
-                unsigned char r = row_buffer[idx + 2];
-                pixel_data = (r + g + b) / 3;
-            }
-            
-            // Endereço linear (compensando inversão)
-            int address = (info.height - 1 - y) * info.width + x;
-            
-            // Enviar para FPGA
-            write_pixel(address, pixel_data);
-        }
-        
-        // Progresso
-        if (y % 10 == 0) {
-            printf("\rProgresso: %d%%", 
-                   ((info.height - y) * 100) / info.height);
-            fflush(stdout);
-        }
-    }
-    
-    printf("\nImagem enviada com sucesso!\n");
-    free(row_buffer);
-    fclose(file);
-    return 0;
-}
 ```
 
 **Detalhe Importante: Padding BMP**
@@ -1338,8 +1551,13 @@ int main() {
 <details>
 <summary><h3>🛠️ Compilação e Execução</h3></summary>
 
-## Makefile
+## 🛠️ Compilação e Execução
 
+O projeto utiliza um **Makefile automatizado** para simplificar o processo de compilação e execução, eliminando a necessidade de executar comandos individuais manualmente.
+
+---
+
+### Makefile
 ```makefile
 # Variáveis
 CC = gcc
@@ -1394,72 +1612,327 @@ help:
 
 ---
 
-## Processo de Compilação Detalhado
+### Como o Makefile Funciona
 
-### Passo 1: Compilar Módulo C
+#### **Estrutura do Makefile**
+
+O Makefile é dividido em **variáveis** e **regras**:
+
+**1. Variáveis de Configuração**
+```makefile
+CC = gcc              # Compilador C
+ASM = gcc             # Compilador Assembly (GCC detecta .s)
+CFLAGS = -std=c99 -Wall  # Flags para compilação C
+TARGET = pixel_test   # Nome do executável final
+OBJS = main.o api.o   # Lista de objetos necessários
+```
+
+**2. Regra `all` (padrão)**
+```makefile
+all: build
+```
+- Quando você executa apenas `make`, esta regra é acionada
+- Redireciona automaticamente para a regra `build`
+
+**3. Regra `build` (compilação principal)**
+```makefile
+build: $(OBJS)
+	@$(CC) $(OBJS) -o $(TARGET)
+```
+- **Dependências:** Requer que `main.o` e `api.o` existam
+- Se algum objeto estiver desatualizado, o Make recompila automaticamente
+- **Link-edição:** Combina os objetos em um executável
+
+**4. Regras de Compilação Individual**
+```makefile
+main.o: main.c header.h
+	@$(CC) -c main.c $(CFLAGS) -o main.o
+```
+- **Dependências:** Se `main.c` ou `header.h` mudar, recompila
+- **Flag `-c`:** Compila sem linkar (gera apenas objeto)
+```makefile
+api.o: api.s
+	@$(ASM) -c api.s $(ASMFLAGS) -o api.o
+```
+- GCC detecta automaticamente que `.s` é Assembly
+- Invoca o GNU Assembler internamente
+
+**5. Regra `run`**
+```makefile
+run: build
+	@sudo ./$(TARGET)
+```
+- **Dependência:** Garante que o programa está compilado
+- Executa com `sudo` (necessário para `/dev/mem`)
+
+**6. Regra `clean`**
+```makefile
+clean:
+	@rm -f $(OBJS) $(TARGET)
+```
+- Remove todos os arquivos gerados (`.o` e executável)
+- Útil para recompilar do zero
+
+---
+
+### Como Usar o Makefile
+
+#### **Compilar o projeto:**
+```bash
+make build
+```
+ou simplesmente:
+```bash
+make
+```
+
+**O que acontece:**
+```
+📦 Compilando main.c...
+⚙️  Compilando api.s...
+🔗 Linkando objetos...
+✅ Executável 'pixel_test' criado com sucesso!
+```
+
+---
+
+#### **Compilar e executar:**
+```bash
+make run
+```
+
+**O que acontece:**
+1. Verifica se há mudanças nos arquivos fonte
+2. Recompila apenas o necessário (compilação incremental)
+3. Executa o programa com `sudo`
+
+---
+
+#### **Limpar arquivos gerados:**
+```bash
+make clean
+```
+
+**Resultado:**
+```
+🧹 Limpando arquivos...
+✨ Limpeza concluída!
+```
+
+---
+
+#### **Ver comandos disponíveis:**
+```bash
+make help
+```
+
+---
+
+### Processo de Compilação Automatizado Pelo Make
+
+O Makefile executa automaticamente as seguintes etapas:
+
+#### **Etapa 1: Compilação do Módulo C (`main.c`)**
+
+**Comando executado internamente:**
 ```bash
 gcc -c main.c -std=c99 -Wall -o main.o
 ```
 
-**Flags:**
-- `-c`: Compilar sem linkar (gera object file)
-- `-std=c99`: Usar padrão C99 (necessário para `uint32_t`, `stdint.h`)
-- `-Wall`: Habilitar todos os warnings
-- `-o main.o`: Nome do arquivo de saída
+**O que acontece:**
+- **`-c`**: Compila sem linkar (gera apenas object file)
+- **`-std=c99`**: Usa padrão C99 (necessário para `uint32_t`, `stdint.h`)
+- **`-Wall`**: Habilita todos os warnings de compilação
+- **`-o main.o`**: Define nome do arquivo de saída
 
 **Resultado:** `main.o` (código objeto ARM)
 
+**Dependências verificadas automaticamente:**
+- Se `main.c` for modificado → recompila `main.o`
+- Se `header.h` for modificado → recompila `main.o`
+- Se nenhum mudou → **pula esta etapa** (otimização)
+
 ---
 
-### Passo 2: Compilar Módulo Assembly
+#### **Etapa 2: Compilação do Módulo Assembly (`api.s`)**
+
+**Comando executado internamente:**
 ```bash
 gcc -c api.s -o api.o
 ```
 
 **O que acontece:**
-1. GCC detecta extensão `.s`
-2. Invoca o **GNU Assembler** (`as`)
-3. Gera código objeto ARM compatível
+1. GCC detecta automaticamente a extensão `.s`
+2. Invoca internamente o **GNU Assembler** (`as`)
+3. Gera código objeto ARM compatível com a ABI padrão
 
-**Alternativa manual:**
+**Equivalente manual (sem Make):**
 ```bash
 as api.s -o api.o
 ```
 
 **Resultado:** `api.o` (código objeto ARM Assembly)
 
+**Compilação incremental:**
+- Se `api.s` não mudou → **pula esta etapa**
+
 ---
 
-### Passo 3: Link-Edição
+#### **Etapa 3: Link-Edição (Linking)**
+
+**Comando executado internamente:**
 ```bash
-gcc api.o main.o -o pixel_test
+gcc main.o api.o -o pixel_test
 ```
 
-**O que o linker faz:**
-1. **Resolve símbolos externos:**
-   ```c
-   // main.c declara
-   extern int NHI(int zoom);
-   
-   // api.s implementa
-   .global NHI
-   NHI:
-       @ código...
-   ```
+**O que o linker (ld) faz:**
 
-2. **Combina seções:**
-   - `.text` (código) de ambos módulos
-   - `.data` (dados inicializados)
-   - `.bss` (dados não inicializados)
-   - `.rodata` (constantes)
+**1. Resolução de símbolos externos:**
+```c
+// main.c declara função externa
+extern int NHI(int zoom);
 
-3. **Gera executável ELF:**
-   - Header ELF
-   - Program headers
-   - Tabela de símbolos
-   - Código final ARM
+// api.s implementa a função
+.global NHI
+NHI:
+    @ código assembly...
+```
+→ O linker conecta a **chamada** em `main.c` com a **implementação** em `api.s`
 
-**Resultado:** `pixel_test` (executável ELF ARM)
+**2. Combinação de seções de memória:**
+- **`.text`**: Código executável (instruções) de ambos módulos
+- **`.data`**: Dados inicializados (variáveis globais com valor inicial)
+- **`.bss`**: Dados não inicializados (variáveis globais sem valor inicial)
+- **`.rodata`**: Constantes somente leitura (strings literais, etc.)
+
+**3. Geração do executável ELF:**
+- **ELF Header**: Metadados do executável
+- **Program Headers**: Como carregar o programa na memória
+- **Section Headers**: Informações de debug e símbolos
+- **Tabela de símbolos**: Mapeamento de funções e variáveis
+- **Código final**: Instruções ARM prontas para execução
+
+**Resultado:** `pixel_test` (executável ELF ARM de 32 bits)
+
+---
+
+### Estrutura de Arquivos Gerados
+```
+projeto/
+├── main.c          # Código fonte C
+├── api.s           # Código fonte Assembly
+├── header.h        # Declarações e protótipos
+├── Makefile        # Script de automação
+├── main.o          # Objeto C (gerado pelo Make)
+├── api.o           # Objeto Assembly (gerado pelo Make)
+└── pixel_test      # Executável final (gerado pelo Make)
+```
+
+---
+
+### Vantagens do Makefile
+
+✅ **Compilação incremental**: Recompila apenas arquivos modificados  
+✅ **Gerenciamento de dependências**: Detecta mudanças em headers automaticamente  
+✅ **Comandos simplificados**: `make run` em vez de múltiplos comandos manuais  
+✅ **Limpeza automatizada**: `make clean` remove todos arquivos gerados  
+✅ **Mensagens amigáveis**: Feedback visual do processo com emojis  
+✅ **Evita erros**: Garante ordem correta de compilação e linkagem
+
+---
+
+### Compilação Manual (Sem Makefile)
+
+Caso precise compilar manualmente sem o Makefile (não recomendado):
+```bash
+# 1. Compilar módulo C
+gcc -c main.c -std=c99 -Wall -o main.o
+
+# 2. Compilar módulo Assembly
+gcc -c api.s -o api.o
+
+# 3. Linkar objetos
+gcc main.o api.o -o pixel_test
+
+# 4. Executar
+sudo ./pixel_test
+```
+
+> **⚠️ Nota:** O Makefile automatiza exatamente esses passos, verificando dependências e recompilando apenas o necessário, economizando tempo e evitando erros.
+
+---
+
+### Depuração do Processo de Compilação
+
+**Para ver os comandos exatos executados pelo Make (modo verbose):**
+```bash
+make build --trace
+```
+
+**Saída:**
+```
+Makefile:18: target 'main.o' does not exist
+gcc -c main.c -std=c99 -Wall -o main.o
+Makefile:23: target 'api.o' does not exist
+gcc -c api.s -o api.o
+Makefile:13: update target 'build' due to: main.o api.o
+gcc main.o api.o -o pixel_test
+```
+
+**Para verificar apenas o que seria executado (dry-run):**
+```bash
+make build -n
+```
+
+**Saída:**
+```
+gcc -c main.c -std=c99 -Wall -o main.o
+gcc -c api.s -o api.o
+gcc main.o api.o -o pixel_test
+```
+
+---
+
+### Requisitos do Sistema
+
+Para usar o Makefile, você precisa ter instalado:
+
+- **GCC**: GNU Compiler Collection (ARM)
+- **GNU Make**: Ferramenta de automação
+- **GNU Assembler (as)**: Incluído no GCC
+- **Sudo**: Necessário para acesso a `/dev/mem`
+
+**Verificar instalação:**
+```bash
+gcc --version
+make --version
+as --version
+```
+
+---
+
+### Exemplo Completo de Uso
+```bash
+# 1. Clonar repositório
+git clone https://github.com/seu-usuario/projeto.git
+cd projeto/software
+
+# 2. Compilar
+make build
+
+# 3. Executar
+make run
+
+# 4. Fazer modificações no código
+nano main.c  # Editar arquivo
+
+# 5. Recompilar (apenas main.c será recompilado!)
+make build
+
+# 6. Limpar tudo e recompilar do zero
+make clean
+make build
+```
 
 ---
 
@@ -1525,27 +1998,6 @@ sudo umount /mnt/sdcard
 
 ---
 
-### Método 3: Terminal Serial + Base64
-
-**Útil quando não há rede:**
-
-```bash
-# No host: codificar executável
-base64 pixel_test > pixel_test.b64
-
-# Conectar terminal serial (115200 8N1)
-screen /dev/ttyUSB0 115200
-
-# Na placa: decodificar
-base64 -d > pixel_test << 'EOF'
-[colar conteúdo de pixel_test.b64]
-EOF
-
-chmod +x pixel_test
-```
-
----
-
 ## Programação da FPGA
 
 ### Via Quartus GUI
@@ -1563,21 +2015,6 @@ chmod +x pixel_test
    - Modo: JTAG
    - Adicionar arquivo `.sof`
    - Clicar `Start`
-
----
-
-### Via Linha de Comando
-
-```bash
-# Compilar projeto
-quartus_sh --flow compile projeto.qpf
-
-# Programar FPGA
-quartus_pgm -c USB-Blaster -m JTAG -o "p;output_files/projeto.sof"
-
-# Verificar programação
-quartus_pgm -c USB-Blaster -l
-```
 
 ---
 
@@ -1825,7 +2262,6 @@ Escolha o zoom:
 (1) 1x  - Sem zoom
 (2) 2x  - Zoom 2x
 (3) 4x  - Zoom 4x
-(4) 8x  - Zoom 8x
 Opção: 2
 
 Executando Replicação (zoom=2x)...
@@ -2101,7 +2537,7 @@ Operação concluída com sucesso!
 #### ⚠️ Limitações Identificadas
 
 1. **Timeout Fixo**
-   - 3M iterações insuficiente para zoom 8x
+   - 3M iterações insuficiente para zoom maior que 4x
    - **Solução:** Timeout adaptativo baseado em zoom
 
 2. **Formato de Imagem**
