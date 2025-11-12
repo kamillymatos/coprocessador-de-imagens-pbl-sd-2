@@ -969,20 +969,6 @@ str     r2, [r4, #PIO_INSTRUCT]
 dmb     sy
 ```
 
-**O que é BIC (Bit Clear)?**
-```
-BIC rd, rn, operand  →  rd = rn AND NOT(operand)
-
-Exemplo:
-  r2 = 0x0FF00C90  (WE=1)
-  r3 = 0x00000010  (máscara bit 4)
-  
-  BIC r2, r2, r3:
-    0x0FF00C90 AND NOT(0x10)
-    = 0x0FF00C90 AND 0xFFFFFFEF
-    = 0x0FF00C80  (WE=0)
-```
-
 **Pacote com SolicitaEscrita=0:**
 
 ```
@@ -1130,97 +1116,246 @@ b       .L_EXIT              ; Vai para retorno de sucesso
 
 #### 4️⃣-7️⃣ Funções de Processamento
 
-Todas seguem o mesmo padrão:
+##### Estrutura Comum dos Algoritmos
 
-##### `replicacao(zoom)` | `decimacao(zoom)` | `NHI(zoom)` | `media_blocos(zoom)`
+Todos os algoritmos (NHI, Replicação, Decimação e Média) seguem o mesmo padrão:
 
-**Parâmetro:**
-- `r0`: Zoom (0=1x, 1=2x, 2=4x, 3=8x)
-
-**Retorno:**
-- `0`: Sucesso
-- `-2`: Timeout (hardware não respondeu)
-
-**Fluxo Comum:**
 ```
-┌─────────────────────┐
-│ 1. Empacotar        │
-│    instrução        │
-│    (opcode + zoom)  │
-└──────────┬──────────┘
-           │
-┌──────────▼──────────┐
-│ 2. Enviar para      │
-│    PIO_INSTRUCT     │
-└──────────┬──────────┘
-           │
-┌──────────▼──────────┐
-│ 3. Pulso START      │
-│    1 → 0 (borda)    │
-└──────────┬──────────┘
-           │
-┌──────────▼──────────┐
-│ 4. Polling DONE     │
-│    (timeout 3M)     │
-└──────────┬──────────┘
-           │
-┌──────────▼──────────┐
-│ 5. Retornar status  │
-└─────────────────────┘
+1. Preparação → 2. Empacotamento → 3. Envio → 4. Pulso START → 5. Polling → 6. Retorno
 ```
 
-**Exemplo: replicacao(zoom)**
+**Fluxo detalhado:**
+1. **Preparação**: Salvar contexto e carregar ponteiro FPGA
+2. **Empacotamento**: Montar instrução (opcode + zoom)
+3. **Envio**: Escrever em PIO_INSTRUCT com sincronização
+4. **Pulso START**: Transição 1→0 para iniciar FPGA
+5. **Polling**: Aguardar flag DONE com timeout
+6. **Retorno**: 0 (sucesso) ou -2 (timeout)
+
+---
+
+##### 🎯 Exemplo: Algoritmo NHI
+
+###### PARTE 1: Inicialização
+
 ```assembly
-replicacao:
-    PUSH {r4-r6, lr}
-    LDR  r4, =FPGA_ADRS
-    LDR  r4, [r4]
-    
-empacotamento_instrucao_replic:
-    MOV  r2, #OPCODE_REPLICACAO  @ 0x00
-    AND  r0, r0, #0x03           @ Máscara zoom (2 bits)
-    LSL  r3, r0, #2              @ Shift para bits [3:2]
-    ORR  r2, r2, r3              @ Combina opcode + zoom
-    
-    STR  r2, [r4, #PIO_INSTRUCT] @ Envia instrução
-    DMB                          @ Sincronização
-    
-    @ Pulso de START (rising edge)
-    MOV  r2, #1
-    STR  r2, [r4, #PIO_START]
-    DMB
-    MOV  r2, #0
-    STR  r2, [r4, #PIO_START]
-    DMB
-    
-    @ Aguarda DONE com timeout
-    LDR  r5, =TIMEOUT_VAL        @ 3.000.000 iterações
-    LDR  r5, [r5]
-    
-.LOOP_LE_DONE_REPLIC:
-    LDR  r2, [r4, #PIO_DONE]
-    TST  r2, #1                  @ Testa bit 0
-    BNE  .L_SUCCESS_REPLIC       @ Se DONE=1, sucesso
-    
-    SUBS r5, r5, #1              @ Decrementa contador
-    BNE  .LOOP_LE_DONE_REPLIC    @ Continua se ≠ 0
-    
-    @ Timeout expirado
-    MOV  r0, #-2
-    B    .EXIT_REPLIC
-    
-.L_SUCCESS_REPLIC:
-    MOV  r0, #0
-    
-.EXIT_REPLIC:
-    POP  {r4-r6, pc}
+NHI:
+    push    {r4-r6, lr}        ; Salva registradores na pilha
+    ldr     r4, =FPGA_ADRS
+    ldr     r4, [r4]           ; r4 = ponteiro virtual para FPGA
 ```
 
-**Diferenças entre algoritmos:** Apenas o `OPCODE` muda:
-- `replicacao`: `0x00`
-- `decimacao`: `0x01`
-- `NHI`: `0x02`
-- `media_blocos`: `0x03`
+**O que acontece:**
+- `push` salva o contexto (r4-r6) e endereço de retorno (lr) pela convenção AAPCS
+- `r4` recebe o ponteiro mapeado por `iniciarAPI()` (ex: 0xB6F00000)
+- Este ponteiro permite acesso aos registradores da FPGA
+
+---
+
+###### PARTE 2: Empacotamento da Instrução
+
+```assembly
+empacotamento_instrucao_NHI:
+    mov     r2, #OPCODE_NHI    ; r2 = 0b10 (opcode do NHI)
+    and     r0, r0, #0x03      ; Mantém apenas 2 bits do zoom
+    lsl     r3, r0, #2         ; Desloca zoom para bits [3:2]
+    orr     r2, r2, r3         ; Combina: r2 = opcode | (zoom << 2)
+```
+
+**Formato da instrução:**
+```
+Bits:  [31..4] [3:2] [1:0]
+       Reserv  Zoom  Opcode
+```
+
+**Exemplo (zoom = 2x):**
+```
+r0 = 1 (zoom 2x)
+r2 = 0b10 (opcode NHI)
+r3 = 1 << 2 = 0b0100
+Resultado: r2 = 0b0110 = 0x06
+```
+
+| Zoom | Valor | Deslocado | Final |
+|------|-------|-----------|-------|
+| 1x   | 0     | 0b0000    | 0x02  |
+| 2x   | 1     | 0b0100    | 0x06  |
+| 4x   | 2     | 0b1000    | 0x0A  |
+
+---
+
+###### PARTE 3: Envio para FPGA
+
+```assembly
+enviar_instrucao_NHI:
+    str     r2, [r4, #PIO_INSTRUCT]  ; Escreve no registrador
+    dmb     sy                        ; Barreira de memória
+```
+
+**Fluxo:**
+```
+CPU ARM → MMU (traduz endereço) → AXI Bus → 
+Lightweight Bridge → Avalon Bus → PIO_INSTRUCT
+```
+
+**Por que DMB?**
+
+Sem `dmb`, o processador pode reordenar instruções por otimização. A barreira garante que a escrita seja concluída antes de prosseguir.
+
+```
+Sem DMB:  STR instrução → STR start (podem executar fora de ordem!)
+Com DMB:  STR instrução → DMB → STR start (ordem garantida)
+```
+
+---
+
+###### PARTE 4: Pulso de START
+
+```assembly
+pulso_start_NHI:
+    mov     r2, #1
+    str     r2, [r4, #PIO_START]   ; START = 1
+    dmb     sy
+    
+    mov     r2, #0
+    str     r2, [r4, #PIO_START]   ; START = 0
+    dmb     sy
+```
+
+**Por que dois envios?**
+
+A FPGA detecta uma **transição de borda** (1→0):
+
+```
+        |‾‾‾‾‾|
+START:  |_____|_____  (borda descendente)
+        
+FPGA detecta a transição e inicia processamento
+```
+
+---
+
+###### PARTE 5: Polling com Timeout
+
+```assembly
+polling_done_NHI:
+    ldr     r5, =TIMEOUT_VAL       ; r5 = 3.000.000
+    ldr     r5, [r5]
+    
+.LOOP_LE_DONE_NHI:
+    ldr     r2, [r4, #PIO_DONE]    ; Lê flag DONE
+    tst     r2, #1                  ; Testa bit 0
+    bne     .L_SUCCESS_NHI          ; Se DONE=1 → sucesso
+    
+    subs    r5, r5, #1              ; Decrementa contador
+    bne     .LOOP_LE_DONE_NHI       ; Continua se r5 ≠ 0
+    
+    mov     r0, #-2                 ; Timeout: retorna -2
+    b       .EXIT_NHI
+```
+
+**Lógica:**
+1. Inicializa contador com 3 milhões
+2. Loop: lê PIO_DONE, verifica bit 0
+3. Se DONE=1: sucesso, sai do loop
+4. Se DONE=0: decrementa contador e continua
+5. Se contador chega a 0: timeout (erro -2)
+
+**Tempo aproximado:** 3M iterações × 5 ciclos / 800 MHz ≈ 18,75 ms
+
+---
+
+###### PARTE 6: Retorno
+
+```assembly
+.L_SUCCESS_NHI:
+    mov     r0, #0                  ; Retorna 0 (sucesso)
+    
+.EXIT_NHI:
+    pop     {r4-r6, pc}             ; Restaura contexto e retorna
+```
+
+**O que faz `pop {r4-r6, pc}`:**
+- Restaura r4, r5, r6 dos valores salvos
+- Carrega endereço de retorno em PC (retorna automaticamente)
+- Equivalente a: restaurar registradores + `bx lr`
+
+---
+
+##### 🔀 Diferenças Entre os Algoritmos
+
+Todos seguem a mesma estrutura, mudando apenas o **opcode**:
+
+```assembly
+# NHI
+mov r2, #OPCODE_NHI          ; r2 = 0b10 = 2
+
+# Replicação
+mov r2, #OPCODE_REPLICACAO   ; r2 = 0b00 = 0
+
+# Decimação
+mov r2, #OPCODE_DECIMACAO    ; r2 = 0b01 = 1
+
+# Média
+mov r2, #OPCODE_MEDIA        ; r2 = 0b11 = 3
+```
+
+**Tabela de instruções (zoom = 2x):**
+
+| Algoritmo    | Opcode | Instrução | Hex  |
+|--------------|--------|-----------|------|
+| Replicação   | 0b00   | 0b0100    | 0x04 |
+| Decimação    | 0b01   | 0b0101    | 0x05 |
+| NHI          | 0b10   | 0b0110    | 0x06 |
+| Média Blocos | 0b11   | 0b0111    | 0x07 |
+
+---
+
+##### 🎓 Conceitos-Chave
+
+###### Convenção AAPCS (ARM ABI)
+
+**Registradores:**
+- `r0-r3`: Argumentos e retorno (não precisam ser salvos)
+- `r4-r11`: Devem ser preservados (por isso o push/pop)
+- `lr`: Link Register (endereço de retorno)
+- `pc`: Program Counter (endereço atual)
+
+###### Memory Barriers
+
+**DMB (Data Memory Barrier):** Força a conclusão de operações de memória antes de prosseguir.
+
+Essencial para garantir que:
+1. Instrução seja escrita antes do pulso START
+2. Hardware veja as operações na ordem correta
+
+###### Detecção de Borda
+
+A FPGA usa detector de borda descendente:
+```verilog
+if (start_prev == 1 && start == 0)  // Detecta 1→0
+    iniciar_processamento();
+```
+
+Por isso são necessários dois envios (1, depois 0).
+
+---
+
+##### 📊 Fluxo Completo
+
+```
+C: result = NHI(1)
+    ↓
+Assembly: MOV r0, #1; BL NHI
+    ↓
+NHI(): Empacota 0x06 → Envia → START → Polling
+    ↓
+FPGA: Detecta instrução → Processa → DONE=1
+    ↓
+Assembly: Retorna r0=0
+    ↓
+C: if (result == 0) printf("Sucesso!")
+```
 
 ---
 
@@ -1439,19 +1574,6 @@ typedef struct {
 } BMPInfoHeader;
 
 #pragma pack(pop)
-```
-
-**Detalhe Importante: Padding BMP**
-
-```
-Exemplo: Imagem 160x120, 24 bits/pixel
-
-Row size = 160 × 3 = 480 bytes
-480 % 4 = 0  → Padding = 0 bytes
-
-Se fosse 161x120:
-Row size = 161 × 3 = 483 bytes
-483 % 4 = 3  → Padding = 1 byte
 ```
 
 ---
@@ -1827,23 +1949,11 @@ projeto/
 ├── api.o           # Objeto Assembly (gerado pelo Make)
 └── pixel_test      # Executável final (gerado pelo Make)
 ```
-
----
-
-### Vantagens do Makefile
-
-✅ **Compilação incremental**: Recompila apenas arquivos modificados  
-✅ **Gerenciamento de dependências**: Detecta mudanças em headers automaticamente  
-✅ **Comandos simplificados**: `make run` em vez de múltiplos comandos manuais  
-✅ **Limpeza automatizada**: `make clean` remove todos arquivos gerados  
-✅ **Mensagens amigáveis**: Feedback visual do processo com emojis  
-✅ **Evita erros**: Garante ordem correta de compilação e linkagem
-
 ---
 
 ### Compilação Manual (Sem Makefile)
 
-Caso precise compilar manualmente sem o Makefile (não recomendado):
+Caso precise compilar manualmente sem o Makefile:
 ```bash
 # 1. Compilar módulo C
 gcc -c main.c -std=c99 -Wall -o main.o
@@ -1966,7 +2076,6 @@ make help
 ```bash
 # Na máquina host
 scp pixel_test root@<IP_DA_PLACA>:/home/root/
-scp ImgGalinha.bmp root@<IP_DA_PLACA>:/home/root/
 
 # Conectar via SSH
 ssh root@<IP_DA_PLACA>
@@ -1975,25 +2084,6 @@ ssh root@<IP_DA_PLACA>
 cd /home/root
 chmod +x pixel_test
 sudo ./pixel_test
-```
-
----
-
-### Método 2: Cartão SD
-
-```bash
-# Montar partição FAT32 do SD card
-sudo mount /dev/sdb1 /mnt/sdcard
-
-# Copiar arquivos
-cp pixel_test /mnt/sdcard/
-cp ImgGalinha.bmp /mnt/sdcard/
-
-# Desmontar
-sudo umount /mnt/sdcard
-
-# Inserir SD na placa e bootar
-# Navegar até /media/sdcard no Linux da placa
 ```
 
 ---
@@ -2066,7 +2156,7 @@ Esta seção ensina como **instalar, configurar e usar** o sistema.
 ### Requisitos de Software
 
 **No computador host:**
-- Quartus Prime 18.1 ou superior
+- Quartus Prime 23.1 ou superior
 - Intel SoC EDS (Embedded Design Suite)
 - Terminal serial (PuTTY, minicom, screen)
 - Cliente SSH (OpenSSH)
@@ -2086,10 +2176,7 @@ Esta seção ensina como **instalar, configurar e usar** o sistema.
    - Monitor ao conector VGA
    - Fonte de alimentação
 
-2. **Configurar jumpers:**
-   - MSEL[4:0] = 01010 (boot via FPGA)
-
-3. **Ligar a placa:**
+2. **Ligar a placa:**
    - LED POWER deve acender
    - LEDs vermelhos indicam atividade
 
@@ -2099,130 +2186,22 @@ Esta seção ensina como **instalar, configurar e usar** o sistema.
 
 **Via Quartus Programmer:**
 
-```bash
-# 1. Conectar USB-Blaster
-# 2. Abrir Quartus Programmer
-quartus_pgmw
-
-# 3. Configurar:
-# - Hardware: USB-Blaster [USB-0]
-# - Mode: JTAG
-# - Device: 5CSEMA5 (Cyclone V)
-
-# 4. Adicionar arquivo .sof:
-# Auto-Detect > 5CSEMA5 > Add File > projeto.sof
-
-# 5. Marcar "Program/Configure"
-# 6. Clicar "Start"
-```
-
-**Via linha de comando:**
-```bash
-quartus_pgm -c USB-Blaster -m JTAG -o "p;output_files/ghrd_top.sof"
-```
-
-**Verificação:**
-```bash
-# Listar dispositivos detectados
-quartus_pgm -c USB-Blaster -l
-
-# Deve mostrar:
-# 1) 5CSEMA5(.|ES|..)
-```
-
----
-
-### Passo 3: Configurar Linux na Placa
-
-**Opção A: Boot via cartão SD**
-
-1. Gravar imagem Linux no SD:
-   ```bash
-   sudo dd if=de1soc_sd.img of=/dev/sdX bs=4M status=progress
-   sync
-   ```
-
-2. Inserir SD na placa e resetar
-
-3. Aguardar boot (LED heartbeat pisca)
-
-**Opção B: Boot via preloader (sem SD)**
-
-Se Linux já está na flash QSPI da placa, apenas reset.
-
----
-
-### Passo 4: Conectar Terminal Serial
-
-```bash
-# Linux/Mac
-screen /dev/ttyUSB0 115200
-
-# Ou
-minicom -D /dev/ttyUSB0 -b 115200
-
-# Windows (PuTTY)
-# Serial line: COM3
-# Speed: 115200
-# Data bits: 8, Parity: None, Stop bits: 1
-```
-
-**Login padrão:**
-```
-Username: root
-Password: (vazio ou 'root')
-```
-
----
-
-### Passo 5: Transferir Executável
-
-**Via SCP (se rede configurada):**
-```bash
-# No host
-scp pixel_test root@192.168.1.10:/home/root/
-scp ImgGalinha.bmp root@192.168.1.10:/home/root/
-
-# Na placa
-chmod +x /home/root/pixel_test
-```
-
-**Via SD card:**
-```bash
-# Copiar para partição FAT32 do SD
-# Na placa:
-mount /dev/mmcblk0p1 /mnt
-cp /mnt/pixel_test /home/root/
-cp /mnt/ImgGalinha.bmp /home/root/
-chmod +x /home/root/pixel_test
-```
-
----
-
-### Passo 6: Verificar Mapeamento de Memória
-
-```bash
-# Verificar se ponte HPS-FPGA está ativa
-cat /proc/iomem | grep ff20
-
-# Deve mostrar:
-# ff200000-ff2fffff : /soc/bridge@ff200000
-```
-
-Se não aparecer, verificar se FPGA foi programada corretamente.
-
-</details>
+Após clonar o repositório, abra um projeto no Quartus através da opção **Open Project** e selecione o arquivo `soc_system.qpf`, localizado dentro da pasta "coprocessador".
+Compile o projeto e programe na placa DE1-SoC através da opção "Programmer".
 
 ---
 
 <details>
 <summary><h3>🎮 Usando o Sistema</h3></summary>
 
-### Iniciar Aplicação
+---
+
+### Passo 3: Execução
+
+Transfira a pasta "ArquivosHPS" para o HPS da placa DE1-SoC, feito isso, utilize o seguinte comando no terminal Linux para executar os programas: 
 
 ```bash
-cd /home/root
-sudo ./pixel_test
+sudo make run
 ```
 
 **Nota:** `sudo` é necessário para acessar `/dev/mem`.
@@ -2559,6 +2538,11 @@ Operação concluída com sucesso!
 2. **Bug:** Imagem invertida verticalmente
    - **Causa:** BMP armazena bottom-up
    - **Solução:** Inverter ordem de leitura no C
+
+3. **Bug** Nova imagem carregada muito lentamente na memória
+   - **Causa:** Polling na função write_pixel causando atraso desnecessário no carregamento dos pixels
+   - **Solução:** Remoção do polling
+
 
 ---
 
