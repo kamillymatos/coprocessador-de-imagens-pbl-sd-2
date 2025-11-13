@@ -67,9 +67,8 @@ iniciarAPI:
     @ Salva registradores na pilha (convenção ARM)
     PUSH    {r4-r7, lr}           @ r4-r7: registradores salvos, lr: endereço de retorno
 
-    @ ========================================================================
-    @ PASSO 1: Abrir o arquivo /dev/mem (syscall open)
-    @ ========================================================================
+   
+    @ Abrir o arquivo /dev/mem (syscall open)
     LDR      r0, =.LC0            @ r0 = "/dev/mem" (nome do arquivo)
     LDR      r1, =4098            @ r1 =  flags de abertura
     MOV      r2, #0               @ r2 = 0 (mode, não usado aqui)
