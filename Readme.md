@@ -37,14 +37,14 @@ Este projeto foi desenvolvido como parte do **Problema 2** da disciplina **Siste
 
 O projeto visa desenvolver as seguintes competências:
 
-- ✅ Aplicar conhecimentos de circuitos digitais e arquiteturas de computadores
-- ✅ Implementar drivers de software e APIs em Assembly
-- ✅ Compreender a interface hardware-software
-- ✅ Utilizar mapeamento de memória em arquitetura ARM
-- ✅ Programar em Assembly ARM e linguagem C
-- ✅ Integrar HPS (Hard Processor System) com FPGA
-- ✅ Realizar link-edição entre módulos Assembly e C
-- ✅ Desenvolver sistemas embarcados para processamento de imagens
+- ✅ Aplicar conhecimentos de circuitos digitais e arquiteturas de computadores;
+- ✅ Implementar drivers de software e APIs em Assembly;
+- ✅ Compreender a interface hardware-software;
+- ✅ Utilizar mapeamento de memória em arquitetura ARM;
+- ✅ Programar em Assembly ARM e linguagem C;
+- ✅ Integrar HPS (Hard Processor System) com FPGA;
+- ✅ Realizar link-edição entre módulos Assembly e C;
+- ✅ Desenvolver sistemas embarcados para processamento de imagens;
 
 ###  Entregas do Projeto
 
@@ -71,18 +71,18 @@ Você faz parte de uma equipe contratada para projetar um **módulo embarcado de
 
 Desenvolver um sistema híbrido HPS–FPGA capaz de:
 
-1. **Receber imagens** em formato BITMAP (160×120 pixels, 8 bits grayscale)
-2. **Processar** através de algoritmos de redimensionamento em hardware
-3. **Exibir** o resultado via VGA em tempo real
-4. **Controlar** operações através de software no processador ARM
+1. **Receber imagens** em formato BITMAP (160×120 pixels, 8 bits grayscale);
+2. **Processar** através de algoritmos de redimensionamento em hardware;
+3. **Exibir** o resultado via VGA em tempo real;
+4. **Controlar** operações através de software no processador ARM.
 
 ### Abordagem
 
 O projeto foi dividido em 3 etapas:
 
-- **Problema 1:** Desenvolvimento do coprocessador em FPGA puro
-- **Problema 2:** Criação da API Assembly e integração HPS–FPGA *(foco deste documento)*
-- **Problema 3:** Aplicação em C com interface de usuário
+- **Problema 1:** Desenvolvimento do coprocessador em FPGA puro;
+- **Problema 2:** Criação da API Assembly e integração HPS–FPGA *(foco deste documento)*;
+- **Problema 3:** Aplicação em C com interface de usuário;
 
 ---
 
@@ -104,10 +104,10 @@ O projeto foi dividido em 3 etapas:
 
 ### Restrições Técnicas
 
-- Uso exclusivo de componentes disponíveis na placa DE1-SoC
-- Compatibilidade ARM Cortex-A9 (HPS)
-- Memória VRAM limitada a 76.800 pixels
-- Comunicação via barramento Lightweight HPS-to-FPGA
+- Uso exclusivo de componentes disponíveis na placa DE1-SoC;
+- Compatibilidade ARM Cortex-A9 (HPS);
+- Memória VRAM limitada a 76.800 pixels;
+- Comunicação via barramento Lightweight HPS-to-FPGA.
 
 ---
 
@@ -173,12 +173,12 @@ O sistema é dividido em três camadas principais:
 
 ### Fluxo de Dados
 
-1. **Entrada:** Usuário carrega BITMAP via aplicação C
-2. **Processamento SW:** Aplicação lê arquivo e extrai pixels
-3. **Transferência:** API Assembly envia pixels para FPGA via `write_pixel()`
-4. **Armazenamento:** FSM de Escrita grava na RAM dual-port
-5. **Processamento HW:** Algoritmo selecionado processa imagem
-6. **Saída:** Resultado exibido em monitor VGA
+1. **Entrada:** Usuário carrega BITMAP via aplicação C;
+2. **Processamento SW:** Aplicação lê arquivo e extrai pixels;
+3. **Transferência:** API Assembly envia pixels para FPGA via `write_pixel()`;
+4. **Armazenamento:** FSM de Escrita grava na RAM dual-port;
+5. **Processamento HW:** Algoritmo selecionado processa imagem;
+6. **Saída:** Resultado exibido em monitor VGA.
 
 ### Fluxo de Controle
 
@@ -424,19 +424,19 @@ IP Catalog > RAM: 2-PORT
 
 A integração foi desenvolvida sobre o **`my_first_fpga-hps_base`**, projeto de referência oficial da Intel que fornece:
 
-- ✅ Controlador DDR3 configurado
-- ✅ Barramentos AXI e Avalon-MM
-- ✅ Ponte Lightweight HPS-to-FPGA
-- ✅ Clock e reset sincronizados
-- ✅ Interfaces Ethernet, USB, UART, GPIO
+- ✅ Controlador DDR3 configurado;
+- ✅ Barramentos AXI e Avalon-MM;
+- ✅ Ponte Lightweight HPS-to-FPGA;
+- ✅ Clock e reset sincronizados;
+- ✅ Interfaces Ethernet, USB, UART, GPIO.
 
 **Por que usar o projeto base?**
 
 Implementar manualmente a infraestrutura HPS–FPGA exigiria:
-- Configurar timings DDR3 (dezenas de parâmetros)
-- Sincronizar múltiplos domínios de clock
-- Implementar protocolos AXI/Avalon
-- Configurar sequência de boot do ARM
+- Configurar timings DDR3 (dezenas de parâmetros);
+- Sincronizar múltiplos domínios de clock;
+- Implementar protocolos AXI/Avalon;
+- Configurar sequência de boot do ARM.
 
 O `my_first_fpga-hps_base` **resolve tudo isso automaticamente**.
 
@@ -498,52 +498,22 @@ Esses sinais foram mapeados no barramento Lightweight do HPS e conectados à nos
 
 ### Adaptação do ghrd_top.v
 
-O arquivo **`ghrd_top.v`** (Golden Hardware Reference Design) foi modificado para instanciar o coprocessador:
+O arquivo ghrd_top.v (Golden Hardware Reference Design) representa o módulo de topo do projeto FPGA e foi modificado para integrar o coprocessador de processamento de imagens ao sistema HPS (Hard Processor System) da Altera.
 
-**Adicionado:**
-```verilog
-module ghrd_top (
-    // ... portas padrão do HPS ...
-    output [7:0] VGA_R, VGA_G, VGA_B,
-    output VGA_HS, VGA_VS,
-    output VGA_CLK, VGA_BLANK_N, VGA_SYNC_N
-);
+**Modificações Realizadas:**
 
-// Instância do sistema HPS gerado
-soc_system u0 (
-    // ... conexões padrão ...
-    
-    // Novos PIOs exportados
-    .pio_instruction_export (instruction_wire),
-    .pio_start_export       (start_wire),
-    .pio_done_export        (done_wire),
-    .pio_donewrite_export   (donewrite_wire)
-);
+**Integração com o Sistema HPS:**
+O sistema soc_system (gerado pela ferramenta Qsys/Platform Designer) foi instanciado e expandido para exportar novos PIOs (Parallel I/O) que servem como interface de comunicação:
+  - **instruction:** Recebe o comando da operação a ser executada;
+  - **start:** Sinal de início que ativa o processamento
+  - **done:** Indica quando o coprocessador finalizou a operação;
+  - **donewrite:** Sinaliza conclusão da escrita de dados na memória.
 
-// Instância do coprocessador
-UnidadeControle coprocessador (
-    .clk            (fpga_clk_50),
-    .reset          (hps_fpga_reset_n),
-    
-    // Conexão com PIOs
-    .instruction    (instruction_wire),
-    .start          (start_wire),
-    .done           (done_wire),
-    .done_write     (donewrite_wire),
-    
-    // Saída VGA
-    .VGA_R          (VGA_R),
-    .VGA_G          (VGA_G),
-    .VGA_B          (VGA_B),
-    .VGA_HS         (VGA_HS),
-    .VGA_VS         (VGA_VS),
-    .VGA_CLK        (VGA_CLK),
-    .VGA_BLANK_N    (VGA_BLANK_N),
-    .VGA_SYNC_N     (VGA_SYNC_N)
-);
-
-endmodule
-```
+**Instanciação do Coprocessador:**
+O módulo UnidadeControle (coprocessador) é conectado ao sistema através de:
+  - **Sinais de Clock e Reset:** Utiliza o clock de 50MHz da FPGA e o reset do HPS;
+  - **Interface de Controle:** Conectado aos PIOs exportados, permitindo comunicação bidirecional com o software;
+  - **Saída de Vídeo:** Todos os sinais VGA são roteados diretamente do coprocessador para os pinos externos da FPGA.
 
 **Resultado:** PIOs mapeados em `0xFF200000` acessíveis via `/dev/mem`.
 
@@ -588,9 +558,9 @@ VRAM Virtual: 0 - 19199 (160×120 pixels)
 ```
 
 **Zoom:**
-- `00` = 1x (sem zoom)
-- `01` = 2x
-- `10` = 4x
+- `00` = 1x (sem zoom);
+- `01` = 2x;
+- `10` = 4x.
 
 **Opcodes:**
 | Código | Valor | Operação |
@@ -610,9 +580,9 @@ VRAM Virtual: 0 - 19199 (160×120 pixels)
 ```
 
 **Campos:**
-- `Pixel [27:20]`: Valor grayscale (0-255)
-- `Endereço [19:5]`: Posição na VRAM (0-19199)
-- `WE [4]`: Write Enable (1 para escrever)
+- `Pixel [27:20]`: Valor grayscale (0-255);
+- `Endereço [19:5]`: Posição na VRAM (0-19199);
+- `WE [4]`: Write Enable (1 para escrever).
 
 ---
 
@@ -653,14 +623,14 @@ MOV r4, r0             ; r4 = file descriptor retornado
 ```
 
 **O que é `/dev/mem`?**
-- Arquivo especial do Linux que representa **toda a memória física**
-- Requer permissões root
-- Permite acesso direto ao hardware (perigoso mas necessário)
+- Arquivo especial do Linux que representa **toda a memória física**;
+- Requer permissões root;
+- Permite acesso direto ao hardware (perigoso mas necessário).
 
 **Flags importantes:**
-- `O_RDWR` (2) = leitura + escrita
-- `O_SYNC` (4096) = sincronização imediata com hardware
-- Total: 4098 = 2 + 4096
+- `O_RDWR` (2) = leitura + escrita;
+- `O_SYNC` (4096) = sincronização imediata com hardware;
+- Total: 4098 = 2 + 4096.
 
 **Verificação de erro:**
 ```assembly
@@ -736,13 +706,13 @@ DEPOIS do mmap():
 **Por que 0xFF200 e não 0xFF200000?**
 
 ```assembly
-LW_BASE: .word 0xff200    ; Apenas offset, não endereço completo!
+LW_BASE: .word 0xff200    ; Apenas offset, não endereço completo.
 ```
 
 O kernel do Linux **adiciona zeros automaticamente** porque:
-- O offset do `mmap()` deve ser múltiplo do tamanho da página (4KB = 0x1000)
-- 0xFF200 na verdade representa 0xFF200**000** (deslocado 12 bits)
-- Isso é uma convenção da syscall `mmap()`
+- O offset do `mmap()` deve ser múltiplo do tamanho da página (4KB = 0x1000);
+- 0xFF200 na verdade representa 0xFF200**000** (deslocado 12 bits).
+- Isso é uma convenção da syscall `mmap()`.
 
 ---
 
@@ -755,9 +725,9 @@ STR r4, [r1]           ; Salva em variável global
 ```
 
 **O que é esse ponteiro?**
-- Endereço virtual no espaço do processo (ex: 0xB6F00000)
-- Quando você escreve nesse endereço, o kernel traduz para 0xFF200000 (físico)
-- É isso que permite `STR r2, [r4, #0x00]` escrever direto na FPGA!
+- Endereço virtual no espaço do processo (ex: 0xB6F00000);
+- Quando você escreve nesse endereço, o kernel traduz para 0xFF200000 (físico);
+- É isso que permite `STR r2, [r4, #0x00]` escrever direto na FPGA.
 
 **Fluxo completo após mapeamento:**
 
@@ -819,12 +789,12 @@ Fecha o `/dev/mem`, liberando o file descriptor.
 Escreve um pixel na VRAM da FPGA usando protocolo de handshake de 2 etapas.
 
 **Parâmetros:**
-- `r0`: Endereço do pixel (0-19199)
-- `r1`: Valor do pixel em grayscale (0-255)
+- `r0`: Endereço do pixel (0-19199);
+- `r1`: Valor do pixel em grayscale (0-255).
 
 **Retorno:**
-- `0`: Sucesso
-- `-1`: Endereço inválido
+- `0`: Sucesso;
+- `-1`: Endereço inválido.
 
 ---
 
@@ -840,9 +810,9 @@ bhs     .L_INVALID_ADDR    ; Branch if Higher or Same (unsigned)
 ```
 
 **Por que 19200?**
-- Imagem: 160×120 pixels = 19.200 pixels totais
-- Endereços válidos: 0 até 19199
-- Qualquer valor ≥ 19200 causa overflow na VRAM
+- Imagem: 160×120 pixels = 19.200 pixels totais;
+- Endereços válidos: 0 até 19199;
+- Qualquer valor ≥ 19200 causa overflow na VRAM.
 
 ---
 
@@ -871,9 +841,9 @@ Exemplo: endereço = 100 (0x64)
 ```
 
 **Por que shift de 5 bits?**
-- O hardware espera endereço nos bits **[19:5]** do registrador PIO
-- Bits [4:0] são reservados para flags e opcode
-- Isso permite endereçar até 2^15 = 32.768 pixels
+- O hardware espera endereço nos bits **[19:5]** do registrador PIO;
+- Bits [4:0] são reservados para flags e opcode;
+- Isso permite endereçar até 2^15 = 32.768 pixels.
 
 ---
 
@@ -942,18 +912,18 @@ dmb     sy                        ; Data Memory Barrier
 ```
 
 **O que acontece na FPGA:**
-1. PIO detecta escrita no registrador `PIO_INSTRUCT`
-2. FSM de Escrita lê o bit `SolicitaEscrita` (bit 4) = **1**
-3. Hardware **armazena** endereço e pixel, mas **ainda não grava na RAM**
-4. Aguarda pulso de confirmação (transição 1→0)
+1. PIO detecta escrita no registrador `PIO_INSTRUCT`;
+2. FSM de Escrita lê o bit `SolicitaEscrita` (bit 4) = **1**;
+3. Hardware **armazena** endereço e pixel, mas **ainda não grava na RAM**;
+4. Aguarda pulso de confirmação (transição 1→0);
 
 **Por que DMB SY?**
 ```assembly
 dmb sy  @ Data Memory Barrier - System
 ```
-- **Garante que a escrita STR seja completada** antes de prosseguir
-- Previne reordenação de instruções pelo pipeline ARM
-- Essencial para sincronização CPU ↔ Hardware
+- **Garante que a escrita STR seja completada** antes de prosseguir;
+- Previne reordenação de instruções pelo pipeline ARM;
+- Essencial para sincronização CPU ↔ Hardware.
 
 Sem DMB, o processador poderia:
 ```
@@ -998,10 +968,10 @@ WE:  ───┘     └─────  (Pulso de escrita)
 ```
 
 **Sequência temporal:**
-1. **t1**: CPU escreve com `WE=1` → FPGA captura endereço e pixel
-2. **DMB**: Garante que escrita chegou ao hardware
-3. **t2**: CPU escreve com `WE=0` → FPGA detecta borda 1→0
-4. **Resultado**: FSM de Escrita grava pixel na RAM
+1. **t1**: CPU escreve com `WE=1` → FPGA captura endereço e pixel;
+2. **DMB**: Garante que escrita chegou ao hardware;
+3. **t2**: CPU escreve com `WE=0` → FPGA detecta borda 1→0;
+4. **Resultado**: FSM de Escrita grava pixel na RAM.
 
 **Sem o segundo envio:**
 ```
@@ -1090,14 +1060,14 @@ b       .L_EXIT              ; Vai para retorno de sucesso
 ```
 
 **Por quê?**
-- Escrita de pixel é **muito rápida** (~100ns na FPGA)
-- Polling adicionaria **overhead desnecessário**
-- CPU pode continuar preparando próximo pixel
+- Escrita de pixel é **muito rápida** (~100ns na FPGA);
+- Polling adicionaria **overhead desnecessário**;
+- CPU pode continuar preparando próximo pixel.
 
 **Trade-off:**
-- ✅ Throughput alto (até 10 milhões pixels/s)
-- ⚠️ Não há confirmação individual de erro
-- ✅ Sistema confia na velocidade do hardware
+- ✅ Throughput alto (até 10 milhões pixels/s);
+- ⚠️ Não há confirmação individual de erro;
+- ✅ Sistema confia na velocidade do hardware.
 
 ---
 
@@ -1128,12 +1098,12 @@ Todos os algoritmos (NHI, Replicação, Decimação e Média) seguem o mesmo pad
 ```
 
 **Fluxo detalhado:**
-1. **Preparação**: Salvar contexto e carregar ponteiro FPGA
-2. **Empacotamento**: Montar instrução (opcode + zoom)
-3. **Envio**: Escrever em PIO_INSTRUCT com sincronização
-4. **Pulso START**: Transição 1→0 para iniciar FPGA
-5. **Polling**: Aguardar flag DONE com timeout
-6. **Retorno**: 0 (sucesso) ou -2 (timeout)
+1. **Preparação**: Salvar contexto e carregar ponteiro FPGA;
+2. **Empacotamento**: Montar instrução (opcode + zoom);
+3. **Envio**: Escrever em PIO_INSTRUCT com sincronização;
+4. **Pulso START**: Transição 1→0 para iniciar FPGA;
+5. **Polling**: Aguardar flag DONE com timeout;
+6. **Retorno**: 0 (sucesso) ou -2 (timeout).
 
 ---
 
@@ -1149,9 +1119,9 @@ NHI:
 ```
 
 **O que acontece:**
-- `push` salva o contexto (r4-r6) e endereço de retorno (lr) pela convenção AAPCS
-- `r4` recebe o ponteiro mapeado por `iniciarAPI()` (ex: 0xB6F00000)
-- Este ponteiro permite acesso aos registradores da FPGA
+- `push` salva o contexto (r4-r6) e endereço de retorno (lr) pela convenção AAPCS;
+- `r4` recebe o ponteiro mapeado por `iniciarAPI()` (ex: 0xB6F00000);
+- Este ponteiro permite acesso aos registradores da FPGA.
 
 ---
 
@@ -1206,7 +1176,7 @@ Lightweight Bridge → Avalon Bus → PIO_INSTRUCT
 Sem `dmb`, o processador pode reordenar instruções por otimização. A barreira garante que a escrita seja concluída antes de prosseguir.
 
 ```
-Sem DMB:  STR instrução → STR start (podem executar fora de ordem!)
+Sem DMB:  STR instrução → STR start (podem executar fora de ordem)
 Com DMB:  STR instrução → DMB → STR start (ordem garantida)
 ```
 
@@ -1258,13 +1228,13 @@ polling_done_NHI:
 ```
 
 **Lógica:**
-1. Inicializa contador com 3 milhões
-2. Loop: lê PIO_DONE, verifica bit 0
-3. Se DONE=1: sucesso, sai do loop
-4. Se DONE=0: decrementa contador e continua
-5. Se contador chega a 0: timeout (erro -2)
+1. Inicializa contador com 3 milhões;
+2. Loop: lê PIO_DONE, verifica bit 0;
+3. Se DONE=1: sucesso, sai do loop;
+4. Se DONE=0: decrementa contador e continua;
+5. Se contador chega a 0: timeout (erro -2).
 
-**Tempo aproximado:** 3M iterações × 5 ciclos / 800 MHz ≈ 18,75 ms
+**Tempo aproximado:** 3M iterações × 5 ciclos / 800 MHz ≈ 18,75 ms.
 
 ---
 
@@ -1279,9 +1249,9 @@ polling_done_NHI:
 ```
 
 **O que faz `pop {r4-r6, pc}`:**
-- Restaura r4, r5, r6 dos valores salvos
-- Carrega endereço de retorno em PC (retorna automaticamente)
-- Equivalente a: restaurar registradores + `bx lr`
+- Restaura r4, r5, r6 dos valores salvos;
+- Carrega endereço de retorno em PC (retorna automaticamente);
+- Equivalente a: restaurar registradores + `bx lr`.
 
 ---
 
@@ -1319,18 +1289,18 @@ mov r2, #OPCODE_MEDIA        ; r2 = 0b11 = 3
 ###### Convenção AAPCS (ARM ABI)
 
 **Registradores:**
-- `r0-r3`: Argumentos e retorno (não precisam ser salvos)
-- `r4-r11`: Devem ser preservados (por isso o push/pop)
-- `lr`: Link Register (endereço de retorno)
-- `pc`: Program Counter (endereço atual)
+- `r0-r3`: Argumentos e retorno (não precisam ser salvos);
+- `r4-r11`: Devem ser preservados (por isso o push/pop);
+- `lr`: Link Register (endereço de retorno);
+- `pc`: Program Counter (endereço atual).
 
 ###### Memory Barriers
 
 **DMB (Data Memory Barrier):** Força a conclusão de operações de memória antes de prosseguir.
 
 Essencial para garantir que:
-1. Instrução seja escrita antes do pulso START
-2. Hardware veja as operações na ordem correta
+1. Instrução seja escrita antes do pulso START;
+2. Hardware veja as operações na ordem correta.
 
 ###### Detecção de Borda
 
@@ -1367,20 +1337,8 @@ C: if (result == 0) printf("Sucesso!")
 **Propósito:** Ler estado do registrador `PIO_DONE`.
 
 **Retorno:**
-- `1`: Hardware pronto
-- `0`: Hardware ocupado
-
-**Código:**
-```assembly
-Flag_Done:
-    push    {r7, lr}
-    
-    ldr     r3, =FPGA_ADRS
-    ldr     r3, [r3]
-    ldr     r0, [r3, #PIO_DONE]  @ Lê flag
-    
-    pop     {r7, pc}              @ Retorna em r0
-```
+- `1`: Hardware pronto;
+- `0`: Hardware ocupado.
 
 **Uso Típico:**
 ```c
@@ -1402,12 +1360,12 @@ NHI(zoom);
 
 **Registradores:**
 ```
-r0-r3:  Argumentos de função (r0 = retorno)
-r4-r11: Callee-saved (devem ser preservados)
-r12:    Scratch register
-r13:    Stack pointer (SP)
-r14:    Link register (LR - endereço de retorno)
-r15:    Program counter (PC)
+r0-r3:  Argumentos de função (r0 = retorno);
+r4-r11: Callee-saved (devem ser preservados);
+r12:    Scratch register;
+r13:    Stack pointer (SP);
+r14:    Link register (LR - endereço de retorno);
+r15:    Program counter (PC).
 ```
 
 **Convenção de Chamada:**
@@ -1607,17 +1565,17 @@ OBJS = main.o api.o   # Lista de objetos necessários
 ```makefile
 all: build
 ```
-- Quando você executa apenas `make`, esta regra é acionada
-- Redireciona automaticamente para a regra `build`
+- Quando você executa apenas `make`, esta regra é acionada;
+- Redireciona automaticamente para a regra `build`.
 
 **3. Regra `build` (compilação principal)**
 ```makefile
 build: $(OBJS)
 	@$(CC) $(OBJS) -o $(TARGET)
 ```
-- **Dependências:** Requer que `main.o` e `api.o` existam
-- Se algum objeto estiver desatualizado, o Make recompila automaticamente
-- **Link-edição:** Combina os objetos em um executável
+- **Dependências:** Requer que `main.o` e `api.o` existam;
+- Se algum objeto estiver desatualizado, o Make recompila automaticamente;
+- **Link-edição:** Combina os objetos em um executável.
 
 **4. Regras de Compilação Individual**
 ```makefile
@@ -1630,24 +1588,24 @@ main.o: main.c header.h
 api.o: api.s
 	@$(ASM) -c api.s $(ASMFLAGS) -o api.o
 ```
-- GCC detecta automaticamente que `.s` é Assembly
-- Invoca o GNU Assembler internamente
+- GCC detecta automaticamente que `.s` é Assembly;
+- Invoca o GNU Assembler internamente.
 
 **5. Regra `run`**
 ```makefile
 run: build
 	@sudo ./$(TARGET)
 ```
-- **Dependência:** Garante que o programa está compilado
-- Executa com `sudo` (necessário para `/dev/mem`)
+- **Dependência:** Garante que o programa está compilado;
+- Executa com `sudo` (necessário para `/dev/mem`).
 
 **6. Regra `clean`**
 ```makefile
 clean:
 	@rm -f $(OBJS) $(TARGET)
 ```
-- Remove todos os arquivos gerados (`.o` e executável)
-- Útil para recompilar do zero
+- Remove todos os arquivos gerados (`.o` e executável);
+- Útil para recompilar do zero.
 
 ---
 
@@ -1656,10 +1614,6 @@ clean:
 #### **Compilar o projeto:**
 ```bash
 make build
-```
-ou simplesmente:
-```bash
-make
 ```
 
 **O que acontece:**
@@ -1673,14 +1627,15 @@ make
 ---
 
 #### **Compilar e executar:**
+
 ```bash
 make run
 ```
 
 **O que acontece:**
-1. Verifica se há mudanças nos arquivos fonte
-2. Recompila apenas o necessário (compilação incremental)
-3. Executa o programa com `sudo`
+1. Verifica se há mudanças nos arquivos fonte;
+2. Recompila apenas o necessário (compilação incremental);
+3. Executa o programa com `sudo`.
 
 ---
 
@@ -1716,17 +1671,17 @@ gcc -c main.c -std=c99 -Wall -o main.o
 ```
 
 **O que acontece:**
-- **`-c`**: Compila sem linkar (gera apenas object file)
-- **`-std=c99`**: Usa padrão C99 (necessário para `uint32_t`, `stdint.h`)
-- **`-Wall`**: Habilita todos os warnings de compilação
-- **`-o main.o`**: Define nome do arquivo de saída
+- **`-c`**: Compila sem linkar (gera apenas object file);
+- **`-std=c99`**: Usa padrão C99 (necessário para `uint32_t`, `stdint.h`);
+- **`-Wall`**: Habilita todos os warnings de compilação;
+- **`-o main.o`**: Define nome do arquivo de saída.
 
 **Resultado:** `main.o` (código objeto ARM)
 
 **Dependências verificadas automaticamente:**
-- Se `main.c` for modificado → recompila `main.o`
-- Se `header.h` for modificado → recompila `main.o`
-- Se nenhum mudou → **pula esta etapa** (otimização)
+- Se `main.c` for modificado → recompila `main.o`;
+- Se `header.h` for modificado → recompila `main.o`;
+- Se nenhum mudou → **pula esta etapa** (otimização).
 
 ---
 
@@ -1738,9 +1693,9 @@ gcc -c api.s -o api.o
 ```
 
 **O que acontece:**
-1. GCC detecta automaticamente a extensão `.s`
-2. Invoca internamente o **GNU Assembler** (`as`)
-3. Gera código objeto ARM compatível com a ABI padrão
+1. GCC detecta automaticamente a extensão `.s`;
+2. Invoca internamente o **GNU Assembler** (`as`);
+3. Gera código objeto ARM compatível com a ABI padrão.
 
 **Equivalente manual (sem Make):**
 ```bash
@@ -1776,17 +1731,17 @@ NHI:
 → O linker conecta a **chamada** em `main.c` com a **implementação** em `api.s`
 
 **2. Combinação de seções de memória:**
-- **`.text`**: Código executável (instruções) de ambos módulos
-- **`.data`**: Dados inicializados (variáveis globais com valor inicial)
-- **`.bss`**: Dados não inicializados (variáveis globais sem valor inicial)
-- **`.rodata`**: Constantes somente leitura (strings literais, etc.)
+- **`.text`**: Código executável (instruções) de ambos módulos;
+- **`.data`**: Dados inicializados (variáveis globais com valor inicial);
+- **`.bss`**: Dados não inicializados (variáveis globais sem valor inicial);
+- **`.rodata`**: Constantes somente leitura (strings literais, etc.).
 
 **3. Geração do executável ELF:**
-- **ELF Header**: Metadados do executável
-- **Program Headers**: Como carregar o programa na memória
-- **Section Headers**: Informações de debug e símbolos
-- **Tabela de símbolos**: Mapeamento de funções e variáveis
-- **Código final**: Instruções ARM prontas para execução
+- **ELF Header**: Metadados do executável;
+- **Program Headers**: Como carregar o programa na memória;
+- **Section Headers**: Informações de debug e símbolos;
+- **Tabela de símbolos**: Mapeamento de funções e variáveis;
+- **Código final**: Instruções ARM prontas para execução.
 
 **Resultado:** `pixel_test` (executável ELF ARM de 32 bits)
 
@@ -1826,45 +1781,15 @@ sudo ./pixel_test
 
 ---
 
-### Depuração do Processo de Compilação
-
-**Para ver os comandos exatos executados pelo Make (modo verbose):**
-```bash
-make build --trace
-```
-
-**Saída:**
-```
-Makefile:18: target 'main.o' does not exist
-gcc -c main.c -std=c99 -Wall -o main.o
-Makefile:23: target 'api.o' does not exist
-gcc -c api.s -o api.o
-Makefile:13: update target 'build' due to: main.o api.o
-gcc main.o api.o -o pixel_test
-```
-
-**Para verificar apenas o que seria executado (dry-run):**
-```bash
-make build -n
-```
-
-**Saída:**
-```
-gcc -c main.c -std=c99 -Wall -o main.o
-gcc -c api.s -o api.o
-gcc main.o api.o -o pixel_test
-```
-
----
 
 ### Requisitos do Sistema
 
 Para usar o Makefile, você precisa ter instalado:
 
-- **GCC**: GNU Compiler Collection (ARM)
-- **GNU Make**: Ferramenta de automação
-- **GNU Assembler (as)**: Incluído no GCC
-- **Sudo**: Necessário para acesso a `/dev/mem`
+- **GCC**: GNU Compiler Collection (ARM);
+- **GNU Make**: Ferramenta de automação;
+- **GNU Assembler (as)**: Incluído no GCC;
+- **Sudo**: Necessário para acesso a `/dev/mem`.
 
 **Verificar instalação:**
 ```bash
@@ -1999,40 +1924,40 @@ Esta seção ensina como **instalar, configurar e usar** o sistema.
 
 ### Requisitos de Hardware
 
-- ✅ Placa DE1-SoC (Cyclone V SoC)
-- ✅ Cabo USB-Blaster (programação FPGA)
-- ✅ Cabo USB-Serial (console)
-- ✅ Monitor VGA
-- ✅ Cabo VGA
-- ✅ Fonte de alimentação 12V
-- ✅ Cartão microSD (opcional, para boot Linux)
+- ✅ Placa DE1-SoC (Cyclone V SoC);
+- ✅ Cabo USB-Blaster (programação FPGA);
+- ✅ Cabo USB-Serial (console);
+- ✅ Monitor VGA;
+- ✅ Cabo VGA;
+- ✅ Fonte de alimentação 12V;
+- ✅ Cartão microSD (opcional, para boot Linux).
 
 ### Requisitos de Software
 
 **No computador host:**
-- Quartus Prime 23.1 ou superior
-- Intel SoC EDS (Embedded Design Suite)
-- Terminal serial (PuTTY, minicom, screen)
-- Cliente SSH (OpenSSH)
+- Quartus Prime 23.1 ou superior;
+- Intel SoC EDS (Embedded Design Suite);
+- Terminal serial (PuTTY, minicom, screen);
+- Cliente SSH (OpenSSH).
 
 **Na placa DE1-SoC:**
-- Linux embarcado (kernel 4.x ou superior)
-- GCC ARM toolchain
-- Bibliotecas padrão C
+- Linux embarcado (kernel 4.x ou superior);
+- GCC ARM toolchain;
+- Bibliotecas padrão C.
 
 ---
 
 ### Passo 1: Configurar Hardware
 
 1. **Conectar cabos:**
-   - USB-Blaster na porta USB da placa
-   - USB-Serial na porta UART
-   - Monitor ao conector VGA
-   - Fonte de alimentação
+   - USB-Blaster na porta USB da placa;
+   - USB-Serial na porta UART;
+   - Monitor ao conector VGA;
+   - Fonte de alimentação.
 
 2. **Ligar a placa:**
-   - LED POWER deve acender
-   - LEDs vermelhos indicam atividade
+   - LED POWER deve acender;
+   - LEDs vermelhos indicam atividade.
 
 ---
 
@@ -2051,9 +1976,10 @@ Compile o projeto e programe na placa DE1-SoC através da opção "Programmer".
 
 ### Passo 3: Execução
 
-Transfira a pasta "ArquivosHPS" para o HPS da placa DE1-SoC, feito isso, utilize o seguinte comando no terminal Linux para executar os programas: 
+Transfira a pasta "ArquivosHPS" para o HPS da placa DE1-SoC, feito isso, utilize os seguintes comandos no terminal Linux para executar os programas: 
 
 ```bash
+make build
 sudo make run
 ```
 
@@ -2122,8 +2048,8 @@ Status: Hardware PRONTO (Done=1)
 ```
 
 **Interpretação:**
-- `PRONTO (Done=1)`: Hardware disponível para nova operação
-- `OCUPADO (Done=0)`: Processamento em andamento
+- `PRONTO (Done=1)`: Hardware disponível para nova operação;
+- `OCUPADO (Done=0)`: Processamento em andamento.
 
 ---
 
@@ -2144,12 +2070,12 @@ Imagem carregada na RAM1!
 ```
 
 **Formatos suportados:**
-- BMP 8 bits (grayscale direto)
-- BMP 24 bits (RGB convertido automaticamente)
+- BMP 8 bits (grayscale direto);
+- BMP 24 bits (RGB convertido automaticamente).
 
 **Requisitos:**
-- Dimensões: exatamente 160×120 pixels
-- Sem compressão (compression=0)
+- Dimensões: exatamente 160×120 pixels;
+- Sem compressão (compression=0).
 
 ---
 
@@ -2208,51 +2134,51 @@ Sistema desmapeia memória e encerra corretamente.
 #### ✅ Pontos Fortes
 
 1. **Comunicação HPS–FPGA estável**
-   - Nenhuma falha de comunicação em todos os testes
-   - Memory barriers garantem sincronização
+   - Nenhuma falha de comunicação em todos os testes;
+   - Memory barriers garantem sincronização.
 
 2. **Algoritmos funcionais**
-   - Todos os 4 algoritmos produzem resultados corretos
-   - Qualidade visual conforme esperado
+   - Todos os 4 algoritmos produzem resultados corretos;
+   - Qualidade visual conforme esperado.
 
 3. **Tratamento de erros**
-   - Timeout funciona corretamente
+   - Timeout funciona corretamente.
 
 4. **Modularidade**
-   - Código fácil de manter e expandir
-   - Separação clara entre camadas
+   - Código fácil de manter e expandir;
+   - Separação clara entre camadas.
 
 ---
 
 #### ⚠️ Limitações Identificadas
 
 1. **Timeout Fixo**
-   - 3M iterações insuficiente para zoom maior que 4x
-   - **Solução:** Timeout adaptativo baseado em zoom
+   - 3M iterações insuficiente para zoom maior que 4x;
+   - **Solução:** Timeout adaptativo baseado em zoom.
 
 2. **Formato de Imagem**
-   - Apenas BMP suportado
-   - **Expansão:** Adicionar PNG, JPEG via libpng/libjpeg
+   - Apenas BMP suportado;
+   - **Expansão:** Adicionar PNG, JPEG via libpng/libjpeg.
 
 3. **Sem Feedback Visual**
-   - Usuário não vê progresso do processamento
-   - **Melhoria:** Adicionar barra de progresso
+   - Usuário não vê progresso do processamento;
+   - **Melhoria:** Adicionar barra de progresso.
 
 ---
 
 ### Bugs Corrigidos Durante Desenvolvimento
 
 1. **Bug:** DONE sempre retorna 0
-   - **Causa:** Clock enable não conectado
-   - **Solução:** Conectar `clk_en` na FSM principal
+   - **Causa:** Clock enable não conectado;
+   - **Solução:** Conectar `clk_en` na FSM principal.
 
 2. **Bug:** Imagem invertida verticalmente
-   - **Causa:** BMP armazena bottom-up
-   - **Solução:** Inverter ordem de leitura no C
+   - **Causa:** BMP armazena bottom-up;
+   - **Solução:** Inverter ordem de leitura no C.
 
 3. **Bug** Nova imagem carregada muito lentamente na memória
-   - **Causa:** Polling na função write_pixel causando atraso desnecessário no carregamento dos pixels
-   - **Solução:** Remoção do polling
+   - **Causa:** Polling na função write_pixel causando atraso desnecessário no carregamento dos pixels;
+   - **Solução:** Remoção do polling.
 
 
 </details>
@@ -2279,23 +2205,23 @@ Sistema desmapeia memória e encerra corretamente.
 ### Conhecimentos Adquiridos
 
 **Hardware:**
-- ✅ Integração HPS–FPGA na plataforma DE1-SoC
-- ✅ Barramentos Avalon-MM e AXI
-- ✅ Mapeamento de memória em SoC
-- ✅ Sincronização entre domínios de clock
+- ✅ Integração HPS–FPGA na plataforma DE1-SoC;
+- ✅ Barramentos Avalon-MM e AXI;
+- ✅ Mapeamento de memória em SoC;
+- ✅ Sincronização entre domínios de clock.
 
 **Software:**
-- ✅ Programação Assembly ARM (AAPCS)
-- ✅ Syscalls Linux (open, mmap2, munmap, close)
-- ✅ Memory barriers e ordenação de memória
-- ✅ Link-edição entre C e Assembly
-- ✅ Manipulação de arquivos BMP
+- ✅ Programação Assembly ARM (AAPCS);
+- ✅ Syscalls Linux (open, mmap2, munmap, close);
+- ✅ Memory barriers e ordenação de memória;
+- ✅ Link-edição entre C e Assembly;
+- ✅ Manipulação de arquivos BMP.
 
 **Ferramentas:**
-- ✅ Quartus Prime (síntese e programação)
-- ✅ Platform Designer (geração de sistema)
-- ✅ GCC ARM toolchain
-- ✅ Makefile para automação
+- ✅ Quartus Prime (síntese e programação);
+- ✅ Platform Designer (geração de sistema);
+- ✅ GCC ARM toolchain;
+- ✅ Makefile para automação.
 
 ---
 
@@ -2322,18 +2248,18 @@ Sistema desmapeia memória e encerra corretamente.
 ### Hardware
 
 **Placa Principal:**
-- **Modelo:** Terasic DE1-SoC
-- **FPGA:** Intel Cyclone V SoC (5CSEMA5F31C6)
-- **HPS:** ARM Cortex-A9 dual-core @ 925 MHz
-- **Memória:** 1 GB DDR3 SDRAM
-- **Flash:** 64 MB QSPI
-- **Interfaces:** VGA, Ethernet, USB, UART, ADC
+- **Modelo:** Terasic DE1-SoC;
+- **FPGA:** Intel Cyclone V SoC;
+- **HPS:** ARM Cortex-A9 dual-core @ 925 MHz;
+- **Memória:** 1 GB DDR3 SDRAM;
+- **Flash:** 64 MB QSPI;
+- **Interfaces:** VGA, Ethernet, USB, UART, ADC.
 
 **Periféricos:**
-- Monitor VGA (1024×768 ou superior)
-- Cabo USB-Blaster
-- Cabo USB-Serial (FTDI)
-- Fonte 12V/2A
+- Monitor VGA (1024×768 ou superior);
+- Cabo USB-Blaster;
+- Cabo USB-Serial (FTDI);
+- Fonte 12V/2A.
 
 ---
 
@@ -2430,23 +2356,6 @@ projeto/
 Este projeto foi desenvolvido para fins acadêmicos como parte da disciplina Sistemas Digitais (TEC499) da UEFS.
 
 **Uso Educacional:** Permitido com atribuição adequada.
-
----
-
-## 🔗 Links Úteis
-
-- 📂 **Repositório GitHub:** https://github.com/kamillymatos/coprocessador-de-imagens-pbl-sd-2/tree/main
-- 📹 **Vídeo Demonstração:** [Link YouTube]
-
----
-
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-
-1. **Consultar documentação:** Este README
-2. **Verificar Issues:** GitHub Issues do projeto
-3. **Contatar equipe:** cerqueiraalana20@gmail.com, juliaoliver.fsa@gmail.com, kamillymatos29@gmail.com
 
 ---
 

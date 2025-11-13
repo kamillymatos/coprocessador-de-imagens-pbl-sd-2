@@ -158,38 +158,29 @@ int main() {
     printf("DEBUG: Tentando abrir /dev/mem...\n");
     
     int init_result = iniciarAPI();
-    printf("DEBUG: iniciarAPI() retornou: %d\n", init_result);
     
     if (init_result != 0) {
         printf("ERRO ao iniciar API!\n");
-        printf("DICA: Execute como root (sudo ./programa)\n");
         return 1;
     }
     
     printf("API OK!\n");
     
-    // Verificação inicial do DONE
-    int done_inicial = Flag_Done();
-    printf("DEBUG: Status inicial DONE = %d\n", done_inicial);
-    
-    if (done_inicial == 0) {
-        printf("AVISO: Hardware inicia com DONE=0.\n");
-        printf("       Isso pode indicar problema no Verilog.\n");
-        printf("       Continuando mesmo assim...\n");
-    }
-    
+  
     printf("\n");
     
     do {
-        printf("\n--- MENU DE TESTES ---\n");
-        printf("1. Vizinho Proximo (NHI)\n");
-        printf("2. Replicacao\n");
-        printf("3. Decimacao\n");
-        printf("4. Media Blocos\n");
-        printf("5. Verificar Status (Flag Done)\n");
-        printf("6. Enviar imagem BMP\n");
-        printf("7. Sair\n");
-        printf("Opcao: ");
+       printf("╔═════════════════════════════════════╗\n");
+       printf("║         MENU PRINCIPAL              ║\n");
+       printf("╠═════════════════════════════════════╣\n");
+       printf("║ [1]-> Vizinho Próximo (NHI)         ║\n");
+       printf("║ [2]-> Replicação                    ║\n");
+       printf("║ [3]-> Decimação                     ║\n");
+       printf("║ [4]-> Média Blocos                  ║\n");
+       printf("║ [5]-> Enviar imagem BMP             ║\n");
+       printf("║ [6]-> Sair                          ║\n");
+       printf("╚═════════════════════════════════════╝\n");
+       printf("→ Opção: ");
         
         if (scanf("%d", &opcao) != 1) {
             printf("Entrada invalida!\n");
@@ -206,7 +197,6 @@ int main() {
                 printf("(1) 1x  - Sem zoom\n");
                 printf("(2) 2x  - Zoom 2x\n");
                 printf("(3) 4x  - Zoom 4x\n");
-                printf("(4) 8x  - Zoom 8x\n");
                 printf("Opcao: ");
                 
                 if (scanf("%d", &zoom_escolha) != 1) {
@@ -215,22 +205,12 @@ int main() {
                     break;
                 }
                 
-                // Converter escolha do usuário (1-4) para valor assembly (0-3)
+                // Converter escolha do usuário (1-3) para valor assembly (0-2)
                 zoom_real = zoom_escolha - 1;
                 
-                if (zoom_real < 0 || zoom_real > 3) {
-                    printf("ERRO: Zoom invalido! Use valores de 1 a 4.\n");
+                if (zoom_real < 0 || zoom_real > 2) {
+                    printf("ERRO: Zoom invalido! Use valores de 1 a 3.\n");
                     break;
-                }
-                
-                // Verifica status do hardware (rápido)
-                int done_status = Flag_Done();
-                printf("DEBUG: Flag_Done = %d\n", done_status);
-                
-                // Se DONE=0, só avisa mas NÃO ESPERA
-                if (done_status == 0) {
-                    printf("AVISO: Hardware inicia com DONE=0 (problema no Verilog).\n");
-                    printf("Executando mesmo assim...\n");
                 }
                 
                 // Executar operação e capturar resultado
@@ -267,17 +247,9 @@ int main() {
                 break;
                 
             case 5:
-                if (Flag_Done()) {
-                    printf("\nStatus: Hardware PRONTO (Done=1)\n");
-                } else {
-                    printf("\nStatus: Hardware OCUPADO (Done=0)\n");
-                }
-                break;
-
-            case 6:
-                printf("Digite o caminho da imagem BMP (160x120): ");
-                char filename[]= "./ImgGalinha.bmp";
-            
+                printf("\nDigite o caminho da imagem BMP (160x120): ");
+                char filename[256];
+                scanf("%s", filename);
                 
                 if (enviar_imagem_bmp(filename) == 0) {
                     printf("Imagem carregada na RAM1!\n");
@@ -286,7 +258,7 @@ int main() {
                 }
                 break;
 
-            case 7:
+            case 6:
                 printf("\nSaindo...\n");
                 break;
                 
@@ -294,7 +266,7 @@ int main() {
                 printf("\nOpcao invalida!\n");
 
         }
-    } while (opcao != 7);
+    } while (opcao != 6);
     
     printf("\nEncerrando API...");
     if (encerrarAPI() == 0) {
